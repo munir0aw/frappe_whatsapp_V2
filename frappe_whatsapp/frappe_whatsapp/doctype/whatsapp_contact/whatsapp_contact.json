@@ -234,6 +234,18 @@
    "fieldname": "notes",
    "fieldtype": "Text Editor",
    "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_bot",
+   "fieldtype": "Section Break",
+   "label": "Bot Status",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "bot_paused_until",
+   "fieldtype": "Datetime",
+   "label": "Bot Paused Until",
+   "description": "If set to a future date, the AI bot will not respond to this contact."
   }
  ],
  "index_web_pages_for_search": 1,

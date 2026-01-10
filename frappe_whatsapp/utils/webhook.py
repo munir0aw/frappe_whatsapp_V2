@@ -438,18 +438,20 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 		}
 		
 		# BROADCAST to all users viewing this contact's chat
-		frappe.publish_realtime(
-			contact.name,
-			message_data,
-			after_commit=True
-		)
+		# REMOVED: Duplicated in message.py > last_message hook
+		# frappe.publish_realtime(
+		# 	contact.name,
+		# 	message_data,
+		# 	after_commit=True
+		# )
 		
 		# Broadcast to latest_chat_updates for chat list updates
-		frappe.publish_realtime(
-			"latest_chat_updates",
-			message_data,
-			after_commit=True
-		)
+		# REMOVED: Duplicated in message.py > last_message hook
+		# frappe.publish_realtime(
+		# 	"latest_chat_updates",
+		# 	message_data,
+		# 	after_commit=True
+		# )
 		
 		# If contact is assigned to a specific user, also notify them directly
 		if contact.email:
@@ -483,10 +485,37 @@ def route_to_custom_webhook(whatsapp_account, data):
 		return False
 	
 	try:
+		# Determine Bot Status
+		bot_status = "Active"
+		try:
+			# Extract sender phone from payload to check permissions
+			entry = data.get("entry", [{}])[0]
+			changes = entry.get("changes", [{}])[0]
+			value = changes.get("value", {})
+			messages = value.get("messages", [])
+			
+			if messages:
+				sender_phone = messages[0].get('from')
+				if sender_phone:
+					contact_name = frappe.db.get_value("WhatsApp Contact", {"mobile_no": sender_phone}, "name")
+					if contact_name:
+						paused_until = frappe.db.get_value("WhatsApp Contact", contact_name, "bot_paused_until")
+						if paused_until:
+							from frappe.utils import get_datetime, now_datetime
+							if get_datetime(paused_until) > now_datetime():
+								bot_status = "Paused"
+		except Exception:
+			pass # Fail safe, default to Active
+
+		headers = {
+			'Content-Type': 'application/json',
+			'X-Frappe-Bot-Status': bot_status
+		}
+
 		response = requests.post(
 			whatsapp_account.custom_webhook_url,
 			json=data,
-			headers={'Content-Type': 'application/json'},
+			headers=headers,
 			timeout=5 
 		)
 		if response.status_code >= 400:
