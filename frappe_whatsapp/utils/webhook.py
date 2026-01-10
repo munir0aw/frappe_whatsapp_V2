@@ -58,7 +58,6 @@ def post():
 		messages = []
 		phone_id = None
 		try:
-			# Safer extraction of message and phone_id
 			entry = data.get("entry", [{}])[0]
 			changes = entry.get("changes", [{}])[0]
 			value = changes.get("value", {})
@@ -67,7 +66,6 @@ def post():
 			phone_id = value.get("metadata", {}).get("phone_number_id")
 			
 			if not messages and not phone_id:
-				# Fallback for different structure if needed
 				messages = data["entry"]["changes"][0]["value"].get("messages", [])
 		except (KeyError, IndexError):
 			pass
@@ -86,20 +84,17 @@ def post():
 
 		whatsapp_account = get_whatsapp_account(phone_id) if phone_id else None
 		if not whatsapp_account:
-			# Fallback to default account or hardcoded backup
 			try:
-				# Try finding any default incoming account
 				default_account = frappe.db.get_value("WhatsApp Account", {"is_default_incoming": 1}, "name")
 				if default_account:
 					whatsapp_account = frappe.get_doc("WhatsApp Account", default_account)
 				else:
-					# Last resort fallback matching user data
 					whatsapp_account = frappe.get_doc("WhatsApp Account", "Main Offile Number")
 			except Exception as e:
 				frappe.log_error(f"WhatsApp Webhook - No Account Found: {str(e)}")
 				return
 		
-		# Route to custom webhook if configured (Requirement 1)
+		# Route to custom webhook if configured
 		if whatsapp_account and whatsapp_account.custom_webhook_url:
 			route_to_custom_webhook(whatsapp_account, data)
 
@@ -110,7 +105,6 @@ def post():
 					frappe.log_error("Skipping message: No 'from' field")
 					continue
 					
-				# Get or create WhatsApp Contact (Requirement 2)
 				try:
 					whatsapp_contact = get_or_create_whatsapp_contact(
 						mobile_no=sender_phone,
@@ -125,7 +119,6 @@ def post():
 				is_reply = True if message.get('context') and 'forwarded' not in message.get('context') else False
 				reply_to_message_id = message['context']['id'] if is_reply else None
 				
-				# Prepare common message fields
 				msg_dict = {
 					"doctype": "WhatsApp Message",
 					"type": "Incoming",
@@ -258,11 +251,8 @@ def post():
 						update_whatsapp_contact_stats(whatsapp_contact.name, message['button']['text'])
 						
 					else:
-						# Generic handling
 						msg_content = message.get(message_type, {}).get("body", str(message.get(message_type, "")))
-						# Fallback if body not found or structure varies
 						if isinstance(message.get(message_type), dict) and "body" not in message[message_type]:
-							# Just dump the dict if we can't find body
 							msg_content = json.dumps(message[message_type])
 
 						msg_dict.update({
@@ -330,11 +320,10 @@ def update_message_status(data):
 def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 	"""Get existing or create new WhatsApp Contact."""
 	
-	# Try to find existing contact by mobile_no
 	# Check exact match
 	existing_name = frappe.db.exists("WhatsApp Contact", mobile_no)
 	
-	# If not found, try adding/removing '+'
+	# Try adding/removing '+'
 	if not existing_name:
 		if mobile_no.startswith('+'):
 			existing_name = frappe.db.exists("WhatsApp Contact", mobile_no[1:])
@@ -343,17 +332,12 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 
 	if existing_name:
 		contact = frappe.get_doc("WhatsApp Contact", existing_name)
-		# Update name if we have new info and old one fallback
 		if contact_name and (not contact.contact_name or contact.contact_name == contact.mobile_no):
 			contact.contact_name = contact_name
 			contact.save(ignore_permissions=True)
 		return contact
 	
-	# Create new contact
-	language = detect_language(contact_name or mobile_no)
-	# Check against Doctype options in case of mismatch
-	# The Doctype seems to have strict validation on options: "Arabic", "English", "Mixed"
-	
+	# Create new contact WITHOUT detected_language to avoid validation issues
 	try:
 		contact = frappe.get_doc({
 			"doctype": "WhatsApp Contact",
@@ -363,12 +347,11 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 			"first_message_date": frappe.utils.now(),
 			"last_message_date": frappe.utils.now(),
 			"qualification_status": "New",
-			"source": "WhatsApp Incoming",
-			"detected_language": language
+			"source": "WhatsApp Incoming"
+			# NOT setting detected_language to avoid validation error
 		}).insert(ignore_permissions=True)
 		return contact
 	except frappe.DuplicateEntryError:
-		# Race condition or inconsistent DB state; try fetching again
 		existing_name = frappe.db.exists("WhatsApp Contact", mobile_no)
 		if existing_name:
 			return frappe.get_doc("WhatsApp Contact", existing_name)
@@ -383,18 +366,12 @@ def update_whatsapp_contact_stats(contact_name, message_text=None):
 		contact.total_messages = (contact.total_messages or 0) + 1
 		contact.unread_count = (contact.unread_count or 0) + 1
 		
-		# Chat-specific updates
 		if message_text:
-			contact.last_message = message_text[:500]  # Truncate for preview
-		contact.is_read = 0  # Mark as unread for chat UI
-		
-		# Detect language from message
-		if message_text and not contact.detected_language:
-			contact.detected_language = detect_language(message_text)
+			contact.last_message = message_text[:500]
+		contact.is_read = 0
 		
 		contact.save(ignore_permissions=True)
 		
-		# Publish real-time event for chat UI
 		if contact.email:
 			message_data = {
 				"content": message_text or '',
@@ -404,13 +381,11 @@ def update_whatsapp_contact_stats(contact_name, message_text=None):
 				"sender_user_no": contact.mobile_no,
 				"user": "Guest"
 			}
-			# Notify chat list
 			frappe.publish_realtime(
 				"latest_chat_updates",
 				message_data,
 				user=contact.email
 			)
-			# Notify open chat room
 			frappe.publish_realtime(
 				contact.name,
 				message_data,
@@ -420,11 +395,27 @@ def update_whatsapp_contact_stats(contact_name, message_text=None):
 		frappe.log_error(f"Failed to update stats for contact {contact_name}")
 
 
-def detect_language(text):
-	"""Simple language detection."""
-	if not text:
-		return "English"
+def route_to_custom_webhook(whatsapp_account, data):
+	"""Route webhook data to custom webhook URL if configured."""
+	if not whatsapp_account.custom_webhook_url:
+		return False
 	
-	# Simple detection
-	arabic_chars = len([c for c in text if '\u0600' <= c <= '\u06FF'])
-	return "Arabic" if arabic_chars > len(text) * 0.3 else "English"
+	try:
+		response = requests.post(
+			whatsapp_account.custom_webhook_url,
+			json=data,
+			headers={'Content-Type': 'application/json'},
+			timeout=5 
+		)
+		if response.status_code >= 400:
+			frappe.log_error(
+				title=f"Custom Webhook Error {response.status_code}",
+				message=f"URL: {whatsapp_account.custom_webhook_url}\nResponse: {response.text[:500]}"
+			)
+		return True
+	except Exception as e:
+		frappe.log_error(
+			title=f"Custom Webhook Failed - {whatsapp_account.name}",
+			message=f"URL: {whatsapp_account.custom_webhook_url}\nError: {str(e)}"
+		)
+		return False

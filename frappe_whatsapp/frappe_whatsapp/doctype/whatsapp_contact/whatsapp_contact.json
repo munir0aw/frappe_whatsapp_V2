@@ -89,7 +89,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "New\\nIn Progress\\nQualified\\nUnqualified\\nConverted",
+   "options": "New\nIn Progress\nQualified\nUnqualified\nConverted",
    "default": "New"
   },
   {
@@ -156,13 +156,13 @@
    "fieldname": "detected_language",
    "fieldtype": "Select",
    "label": "Language",
-   "options": "\\nArabic\\nEnglish\\nMixed"
+   "options": "\nArabic\nEnglish\nMixed"
   },
   {
    "fieldname": "customer_intent",
    "fieldtype": "Select",
    "label": "Intent",
-   "options": "\\nInquiry\\nSupport\\nSales\\nOther"
+   "options": "\nInquiry\nSupport\nSales\nOther"
   },
   {
    "fieldname": "column_break_ai",
@@ -238,7 +238,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-10 07:54:00.000000",
+ "modified": "2026-01-10 09:37:00.000000",
  "modified_by": "Administrator",
  "module": "Frappe Whatsapp",
  "name": "WhatsApp Contact",
