@@ -367,17 +367,46 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 
 
 def update_whatsapp_contact_stats(contact_name, message_text=None):
-	"""Update conversation statistics."""
+	"""Update conversation statistics and chat fields."""
 	contact = frappe.get_doc("WhatsApp Contact", contact_name)
 	contact.last_message_date = frappe.utils.now()
 	contact.total_messages = (contact.total_messages or 0) + 1
 	contact.unread_count = (contact.unread_count or 0) + 1
+	
+	# Chat-specific updates
+	if message_text:
+		contact.last_message = message_text[:500]  # Truncate for preview
+	contact.is_read = 0  # Mark as unread for chat UI
 	
 	# Detect language from message
 	if message_text and not contact.detected_language:
 		contact.detected_language = detect_language(message_text)
 	
 	contact.save(ignore_permissions=True)
+	
+	# Publish real-time event for chat UI
+	if contact.email:
+		message_data = {
+			"content": message_text or '',
+			"creation": frappe.utils.now(),
+			"room": contact.name,
+			"contact_name": contact.contact_name,
+			"sender_user_no": contact.mobile_no,
+			"user": "Guest"
+		}
+		# Notify chat list
+		frappe.publish_realtime(
+			"latest_chat_updates",
+			message_data,
+			user=contact.email
+		)
+		# Notify open chat room
+		frappe.publish_realtime(
+			contact.name,
+			message_data,
+			user=contact.email
+		)
+
 
 
 def detect_language(text):

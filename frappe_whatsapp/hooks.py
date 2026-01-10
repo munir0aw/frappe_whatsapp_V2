@@ -12,7 +12,15 @@ app_license = "MIT"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/frappe_whatsapp/css/frappe_whatsapp.css"
-app_include_js = "/assets/frappe_whatsapp/js/frappe_whatsapp.js"
+from frappe import __version__ as frappe_version
+
+is_frappe_above_v13 = int(frappe_version.split('.')[0]) > 13
+
+app_include_css = ['frappe_whatsapp.bundle.css'] if is_frappe_above_v13 else [
+    '/assets/css/frappe_whatsapp.css']
+
+app_include_js = ['frappe_whatsapp.bundle.js'] if is_frappe_above_v13 else [
+    '/assets/frappe_whatsapp/js/frappe_whatsapp.js']
 # app_include_js = ["frappe_whatsapp.js"]
 
 # include js, css files in header of web template
@@ -216,5 +224,15 @@ doc_events = {
         "after_delete": "frappe_whatsapp.utils.run_server_script_for_doc_event",
         "before_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event",
         "on_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event"
+    },
+    "WhatsApp Message": {
+        "after_insert": "frappe_whatsapp.api.message.last_message"
     }
 }
+
+# Sound Notifications for Chat
+sounds = [
+    {'name': 'chat-notification', 'src': '/assets/frappe/sounds/email.mp3', 'volume': 0.2},
+    {'name': 'chat-message-send', 'src': '/assets/frappe/sounds/submit.mp3', 'volume': 0.2},
+    {'name': 'chat-message-receive', 'src': '/assets/frappe/sounds/alert.mp3', 'volume': 0.5}
+]

@@ -12,14 +12,17 @@
   "country_code",
   "column_break_1",
   "whatsapp_account",
+  "email",
   "qualification_status",
   "source",
   "section_break_conversation",
   "first_message_date",
   "last_message_date",
+  "last_message",
   "column_break_conv",
   "total_messages",
   "unread_count",
+  "is_read",
   "section_break_ai",
   "detected_language",
   "customer_intent",
@@ -75,6 +78,13 @@
    "reqd": 1
   },
   {
+   "fieldname": "email",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "User",
+   "description": "Assign chat to a user for real-time notifications"
+  },
+  {
    "fieldname": "qualification_status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -104,6 +114,12 @@
    "fieldname": "last_message_date",
    "fieldtype": "Datetime",
    "in_list_view": 1,
+   "label": "Last Message Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_message",
+   "fieldtype": "Long Text",
    "label": "Last Message",
    "read_only": 1
   },
@@ -122,6 +138,12 @@
    "fieldname": "unread_count",
    "fieldtype": "Int",
    "label": "Unread Count",
+   "default": "0"
+  },
+  {
+   "fieldname": "is_read",
+   "fieldtype": "Check",
+   "label": "Is Read",
    "default": "0"
   },
   {
@@ -216,7 +238,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-01-10 07:44:00.000000",
+ "modified": "2026-01-10 07:54:00.000000",
  "modified_by": "Administrator",
  "module": "Frappe Whatsapp",
  "name": "WhatsApp Contact",
