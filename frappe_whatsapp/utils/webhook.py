@@ -350,6 +350,10 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 		return contact
 	
 	# Create new contact
+	language = detect_language(contact_name or mobile_no)
+	# Check against Doctype options in case of mismatch
+	# The Doctype seems to have strict validation on options: "Arabic", "English", "Mixed"
+	
 	try:
 		contact = frappe.get_doc({
 			"doctype": "WhatsApp Contact",
@@ -360,7 +364,7 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 			"last_message_date": frappe.utils.now(),
 			"qualification_status": "New",
 			"source": "WhatsApp Incoming",
-			"detected_language": detect_language(contact_name or mobile_no)
+			"detected_language": language
 		}).insert(ignore_permissions=True)
 		return contact
 	except frappe.DuplicateEntryError:
@@ -421,34 +425,6 @@ def detect_language(text):
 	if not text:
 		return "English"
 	
+	# Simple detection
 	arabic_chars = len([c for c in text if '\u0600' <= c <= '\u06FF'])
 	return "Arabic" if arabic_chars > len(text) * 0.3 else "English"
-
-
-def route_to_custom_webhook(whatsapp_account, data):
-	"""Route webhook data to custom webhook URL if configured."""
-	if not whatsapp_account.custom_webhook_url:
-		return False
-	
-	try:
-		# Send as a background task if possible, but here we do synchronous for simplicity/reliability
-		# Set a short timeout to not block the main webhook too long
-		response = requests.post(
-			whatsapp_account.custom_webhook_url,
-			json=data,
-			headers={'Content-Type': 'application/json'},
-			timeout=5 
-		)
-		# We don't typically log every success to avoid spam, but can log errors
-		if response.status_code >= 400:
-			frappe.log_error(
-				title=f"Custom Webhook Error {response.status_code}",
-				message=f"URL: {whatsapp_account.custom_webhook_url}\nResponse: {response.text[:500]}"
-			)
-		return True
-	except Exception as e:
-		frappe.log_error(
-			title=f"Custom Webhook Failed - {whatsapp_account.name}",
-			message=f"URL: {whatsapp_account.custom_webhook_url}\nError: {str(e)}"
-		)
-		return False
