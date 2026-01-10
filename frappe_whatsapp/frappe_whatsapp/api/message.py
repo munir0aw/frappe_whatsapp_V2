@@ -34,6 +34,95 @@ def get_all(room: str, user_no: str):
 
 
 @frappe.whitelist()
+def get_messages_for_lead(lead_name):
+    """Get WhatsApp messages for a CRM Lead.
+    
+    Queries messages through:
+    1. WhatsApp Contact linked to Lead via lead_reference
+    2. OR by matching phone number
+    
+    Args:
+        lead_name: CRM Lead document name
+        
+    Returns:
+        List of WhatsApp messages
+    """
+    # Get Lead's mobile number
+    mobile_no = frappe.db.get_value("CRM Lead", lead_name, "mobile_no")
+    if not mobile_no:
+        return []
+    
+    # Get phone number variants
+    phone_variants = [mobile_no]
+    if mobile_no.startswith('+'):
+        phone_variants.append(mobile_no[1:])
+    else:
+        phone_variants.append('+' + mobile_no)
+    
+    # Query messages by phone number (to or from)
+    messages = frappe.db.sql("""
+        SELECT 
+            name,
+            creation,
+            `type`,
+            `from`,
+            `to`,
+            message,
+            attach,
+            content_type,
+            status,
+            message_id,
+            profile_name
+        FROM `tabWhatsApp Message` 
+        WHERE (`to` IN %(phones)s OR `from` IN %(phones)s)
+        ORDER BY creation ASC
+    """, {"phones": phone_variants}, as_dict=True)
+    
+    return messages
+
+
+@frappe.whitelist()
+def get_messages_by_phone(mobile_no):
+    """Get WhatsApp messages by phone number.
+    
+    Args:
+        mobile_no: Phone number to search for
+        
+    Returns:
+        List of WhatsApp messages
+    """
+    if not mobile_no:
+        return []
+    
+    # Get phone number variants
+    phone_variants = [mobile_no]
+    if mobile_no.startswith('+'):
+        phone_variants.append(mobile_no[1:])
+    else:
+        phone_variants.append('+' + mobile_no)
+    
+    messages = frappe.db.sql("""
+        SELECT 
+            name,
+            creation,
+            `type`,
+            `from`,
+            `to`,
+            message,
+            attach,
+            content_type,
+            status,
+            message_id,
+            profile_name
+        FROM `tabWhatsApp Message` 
+        WHERE (`to` IN %(phones)s OR `from` IN %(phones)s)
+        ORDER BY creation ASC
+    """, {"phones": phone_variants}, as_dict=True)
+    
+    return messages
+
+
+@frappe.whitelist()
 def mark_as_read(room):
     """Mark messages as read in local DB and optionally send read receipts to WhatsApp."""
     try:
