@@ -415,16 +415,27 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=None):
 	"""Update conversation statistics and publish real-time events."""
 	try:
-		contact = frappe.get_doc("WhatsApp Contact", contact_name)
-		contact.last_message_date = frappe.utils.now()
-		contact.total_messages = (contact.total_messages or 0) + 1
-		contact.unread_count = (contact.unread_count or 0) + 1
-		
+
+		# Use direct DB update to avoid TimestampMismatchError
+		now = frappe.utils.now()
+		updates = {
+			"last_message_date": now,
+			"is_read": 0
+		}
 		if message_text:
-			contact.last_message = message_text[:500]
-		contact.is_read = 0
+			updates["last_message"] = message_text[:500]
+			
+		frappe.db.set_value("WhatsApp Contact", contact_name, updates, update_modified=False)
 		
-		contact.save(ignore_permissions=True)
+		# Increment stats safely
+		frappe.db.sql("""
+			UPDATE `tabWhatsApp Contact`
+			SET total_messages = total_messages + 1, unread_count = unread_count + 1
+			WHERE name = %(name)s
+		""", {"name": contact_name})
+		
+		# Fetch fresh doc for real-time publishing
+		contact = frappe.get_doc("WhatsApp Contact", contact_name)
 		
 		# Build message data for real-time updates
 		message_data = {
