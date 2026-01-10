@@ -310,16 +310,29 @@ class WhatsAppMessage(Document):
                 headers=headers,
                 data=json.dumps(data),
             )
-            self.message_id = response["messages"][0]["id"]
+            
+            if response and "messages" in response:
+                self.message_id = response["messages"][0]["id"]
+            else:
+                 # Message likely sent (200 OK) but response structure unexpected
+                 frappe.log_error(title="WhatsApp Send - Unexpected Response", message=str(response))
+                 self.status = "Sent (ID Missing)"
 
         except Exception as e:
-            res = frappe.flags.integration_request.json().get("error", {})
-            error_message = res.get("Error", res.get("message"))
+            res = {}
+            error_message = str(e)
+            try:
+                if frappe.flags.integration_request:
+                    res = frappe.flags.integration_request.json().get("error", {})
+                    error_message = res.get("Error", res.get("message"))
+            except:
+                pass
+                
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
                     "template": "Text Message",
-                    "meta_data": frappe.flags.integration_request.json(),
+                    "meta_data": f"Data: {json.dumps(data)}\nError: {error_message}",
                 }
             ).insert(ignore_permissions=True)
 
