@@ -11,7 +11,6 @@ app_license = "MIT"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/frappe_whatsapp/css/frappe_whatsapp.css"
 from frappe import __version__ as frappe_version
 
 app_include_css = ['frappe_whatsapp.bundle.css']
@@ -104,14 +103,6 @@ app_include_js = ['frappe_whatsapp.bundle.js']
 # Document Events
 # ---------------
 # Hook on document methods and events
-
-# doc_events = {
-#   "*": {
-#       "on_update": "method",
-#       "on_cancel": "method",
-#       "on_trash": "method"
-#   }
-# }
 
 # Scheduled Tasks
 # ---------------
@@ -220,7 +211,7 @@ doc_events = {
         "on_update_after_submit": "frappe_whatsapp.utils.run_server_script_for_doc_event"
     },
     "WhatsApp Message": {
-        "after_insert": "frappe_whatsapp.api.message.last_message"
+        "after_insert": "frappe_whatsapp.frappe_whatsapp.api.message.last_message"
     }
 }
 

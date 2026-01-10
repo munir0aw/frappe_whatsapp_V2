@@ -119,6 +119,9 @@ def post():
 				is_reply = True if message.get('context') and 'forwarded' not in message.get('context') else False
 				reply_to_message_id = message['context']['id'] if is_reply else None
 				
+				# Try to find linked CRM Lead by phone number
+				reference_doctype, reference_name = get_linked_reference(sender_phone, whatsapp_contact)
+				
 				msg_dict = {
 					"doctype": "WhatsApp Message",
 					"type": "Incoming",
@@ -128,8 +131,8 @@ def post():
 					"is_reply": is_reply,
 					"profile_name": sender_profile_name,
 					"whatsapp_account": whatsapp_account.name,
-					"reference_doctype": "WhatsApp Contact",
-					"reference_name": whatsapp_contact.name
+					"reference_doctype": reference_doctype,
+					"reference_name": reference_name
 				}
 
 				try:
@@ -281,6 +284,28 @@ def post():
 	
 	return Response("OK", status=200)
 
+
+def get_linked_reference(phone_number, whatsapp_contact):
+	"""Find the best reference document for this phone number.
+	Priority: CRM Lead > WhatsApp Contact
+	"""
+	# Clean phone number variations
+	phone_variants = [phone_number]
+	if phone_number.startswith('+'):
+		phone_variants.append(phone_number[1:])
+	else:
+		phone_variants.append('+' + phone_number)
+	
+	# Try to find CRM Lead by mobile number
+	for phone in phone_variants:
+		lead_name = frappe.db.get_value("CRM Lead", {"mobile_no": phone}, "name")
+		if lead_name:
+			return "CRM Lead", lead_name
+	
+	# Fallback to WhatsApp Contact
+	return "WhatsApp Contact", whatsapp_contact.name
+
+
 def update_status(data):
 	"""Update status hook."""
 	if data.get("field") == "message_template_status_update":
@@ -346,9 +371,8 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 			"whatsapp_account": whatsapp_account,
 			"first_message_date": frappe.utils.now(),
 			"last_message_date": frappe.utils.now(),
-			"qualification_status": "New",
 			"source": "WhatsApp Incoming"
-			# NOT setting detected_language to avoid validation error
+			# NOT setting qualification_status to avoid validation error
 		}).insert(ignore_permissions=True)
 		return contact
 	except frappe.DuplicateEntryError:
