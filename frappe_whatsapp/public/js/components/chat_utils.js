@@ -48,7 +48,7 @@ function is_image(filename) {
 async function get_rooms(email) {
   const res = await frappe.call({
     type: 'GET',
-    method: 'whatsapp_chat.api.contacts.get',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.contacts.get',
     args: {
       email: email,
     },
@@ -58,7 +58,7 @@ async function get_rooms(email) {
 
 async function get_messages(room, user_no) {
   const res = await frappe.call({
-    method: 'whatsapp_chat.api.message.get_all',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.message.get_all',
     args: {
       room: room,
       user_no: user_no,
@@ -70,7 +70,7 @@ async function get_messages(room, user_no) {
 async function send_message(content, user, room, user_no, attachment) {
   try {
     await frappe.call({
-      method: 'whatsapp_chat.api.message.send',
+      method: 'frappe_whatsapp.frappe_whatsapp.api.message.send',
       args: {
         content: content,
         user: user,
@@ -90,7 +90,7 @@ async function send_message(content, user, room, user_no, attachment) {
 async function get_settings(token) {
   const res = await frappe.call({
     type: 'GET',
-    method: 'whatsapp_chat.api.config.settings',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.config.settings',
     args: {
       token: token,
     },
@@ -101,7 +101,7 @@ async function get_settings(token) {
 async function mark_message_read(room) {
   try {
     await frappe.call({
-      method: 'whatsapp_chat.api.message.mark_as_read',
+      method: 'frappe_whatsapp.frappe_whatsapp.api.message.mark_as_read',
       args: {
         room: room,
       },
@@ -114,7 +114,7 @@ async function mark_message_read(room) {
 
 async function create_guest({ email, full_name, message }) {
   const res = await frappe.call({
-    method: 'chat.api.user.get_guest_room',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.user.get_guest_room',
     args: {
       email: email,
       full_name: full_name,
@@ -127,7 +127,7 @@ async function create_guest({ email, full_name, message }) {
 async function set_typing(room, user, is_typing, is_guest) {
   try {
     await frappe.call({
-      method: 'whatsapp_chat.api.message.set_typing',
+      method: 'frappe_whatsapp.frappe_whatsapp.api.message.set_typing',
       args: {
         room: room,
         user: user,
@@ -142,7 +142,7 @@ async function set_typing(room, user, is_typing, is_guest) {
 
 async function create_private_room(contact_name, mobile_no, email) {
   await frappe.call({
-    method: 'whatsapp_chat.api.contacts.create',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.contacts.create',
     args: {
       contact_name: contact_name,
       mobile_no: mobile_no,
@@ -153,7 +153,7 @@ async function create_private_room(contact_name, mobile_no, email) {
 
 async function set_user_settings(settings) {
   await frappe.call({
-    method: 'chat.api.config.user_settings',
+    method: 'frappe_whatsapp.frappe_whatsapp.api.config.user_settings',
     args: {
       settings: settings,
     },
