@@ -41,7 +41,8 @@
   "reference_doctype",
   "bulk_message_reference",
   "column_break_efrb",
-  "reference_name"
+  "reference_name",
+  "whatsapp_contact"
  ],
  "fields": [
   {
@@ -271,6 +272,13 @@
    "fieldname": "flow_response",
    "fieldtype": "JSON",
    "label": "Flow Response Data",
+   "read_only": 1
+  },
+  {
+   "fieldname": "whatsapp_contact",
+   "fieldtype": "Link",
+   "label": "WhatsApp Contact",
+   "options": "WhatsApp Contact",
    "read_only": 1
   }
  ],

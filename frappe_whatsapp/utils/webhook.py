@@ -119,7 +119,17 @@ def post():
 				is_reply = True if message.get('context') and 'forwarded' not in message.get('context') else False
 				reply_to_message_id = message['context']['id'] if is_reply else None
 				
-				# Messages are always linked to WhatsApp Contact
+				# Check if contact is linked to a CRM Lead
+				lead_name = whatsapp_contact.lead_reference if whatsapp_contact.lead_reference else find_crm_lead_by_phone(sender_phone)
+				
+				# DUAL LINKING: Link to Lead (for CRM) AND WhatsApp Contact (for chat widget)
+				if lead_name:
+					reference_doctype = "CRM Lead"
+					reference_name = lead_name
+				else:
+					reference_doctype = "WhatsApp Contact"
+					reference_name = whatsapp_contact.name
+				
 				msg_dict = {
 					"doctype": "WhatsApp Message",
 					"type": "Incoming",
@@ -129,8 +139,9 @@ def post():
 					"is_reply": is_reply,
 					"profile_name": sender_profile_name,
 					"whatsapp_account": whatsapp_account.name,
-					"reference_doctype": "WhatsApp Contact",
-					"reference_name": whatsapp_contact.name
+					"reference_doctype": reference_doctype,
+					"reference_name": reference_name,
+					"whatsapp_contact": whatsapp_contact.name  # Always link to WhatsApp Contact
 				}
 
 				try:
@@ -422,14 +433,13 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 		}
 		
 		# BROADCAST to all users viewing this contact's chat
-		# Use room-based event (contact.name is the room)
 		frappe.publish_realtime(
 			contact.name,
 			message_data,
 			after_commit=True
 		)
 		
-		# Also broadcast to latest_chat_updates for chat list updates
+		# Broadcast to latest_chat_updates for chat list updates
 		frappe.publish_realtime(
 			"latest_chat_updates",
 			message_data,

@@ -5,10 +5,11 @@ import mimetypes
 
 @frappe.whitelist()
 def get_all(room: str, user_no: str):
-    """Get all the messages of a particular room
+    """Get all the messages of a particular room (WhatsApp Contact)
 
     Args:
-        room (str): Room's name.
+        room (str): WhatsApp Contact name (mobile number).
+        user_no (str): Phone number to search for.
 
     """
     return frappe.db.sql("""
@@ -27,10 +28,15 @@ def get_all(room: str, user_no: str):
             else NULL
         end as caption,
         COALESCE(content_type, 'text') as content_type
-        from `tabWhatsApp Message` where (`to` = %(user_no)s or `from` = %(user_no)s)
+        from `tabWhatsApp Message` 
+        where (
+            `to` = %(user_no)s 
+            or `from` = %(user_no)s 
+            or whatsapp_contact = %(room)s
+        )
         AND COALESCE(message_type, '') <> 'Template'
         order by creation asc
-    """, {"user_no": user_no}, as_dict=True)
+    """, {"user_no": user_no, "room": room}, as_dict=True)
 
 
 @frappe.whitelist()

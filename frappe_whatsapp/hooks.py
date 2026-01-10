@@ -145,12 +145,10 @@ scheduler_events = {
 
 # Overriding Methods
 # ------------------------------
-# Override CRM's WhatsApp API calls to use our implementation
-override_whitelisted_methods = {
-    "crm.api.whatsapp.get_whatsapp_messages": "frappe_whatsapp.frappe_whatsapp.api.whatsapp.get_whatsapp_messages",
-    "crm.api.whatsapp.create_whatsapp_message": "frappe_whatsapp.frappe_whatsapp.api.whatsapp.create_whatsapp_message",
-    "crm.api.whatsapp.send_template": "frappe_whatsapp.frappe_whatsapp.api.whatsapp.send_template"
-}
+# Let CRM use its native API to query by reference_doctype/reference_name
+# override_whitelisted_methods = {
+#     "crm.api.whatsapp.get_whatsapp_messages": "frappe_whatsapp.frappe_whatsapp.api.whatsapp.get_whatsapp_messages",
+# }
 
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
