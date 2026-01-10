@@ -1,0 +1,243 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:mobile_no",
+ "creation": "2026-01-10 07:44:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_identity",
+  "mobile_no",
+  "contact_name",
+  "country_code",
+  "column_break_1",
+  "whatsapp_account",
+  "qualification_status",
+  "source",
+  "section_break_conversation",
+  "first_message_date",
+  "last_message_date",
+  "column_break_conv",
+  "total_messages",
+  "unread_count",
+  "section_break_ai",
+  "detected_language",
+  "customer_intent",
+  "column_break_ai",
+  "conversation_summary",
+  "section_break_qualification",
+  "qualified_date",
+  "qualification_notes",
+  "section_break_conversion",
+  "converted_to_lead",
+  "lead_reference",
+  "column_break_conv2",
+  "converted_date",
+  "converted_by",
+  "section_break_notes",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_identity",
+   "fieldtype": "Section Break",
+   "label": "Contact Information"
+  },
+  {
+   "fieldname": "mobile_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile No",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "contact_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Contact Name"
+  },
+  {
+   "fieldname": "country_code",
+   "fieldtype": "Data",
+   "label": "Country Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "whatsapp_account",
+   "fieldtype": "Link",
+   "label": "WhatsApp Account",
+   "options": "WhatsApp Account",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qualification_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "New\\nIn Progress\\nQualified\\nUnqualified\\nConverted",
+   "default": "New"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "default": "WhatsApp Incoming",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_conversation",
+   "fieldtype": "Section Break",
+   "label": "Conversation Tracking"
+  },
+  {
+   "fieldname": "first_message_date",
+   "fieldtype": "Datetime",
+   "label": "First Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_message_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Last Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_conv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_messages",
+   "fieldtype": "Int",
+   "label": "Total Messages",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "unread_count",
+   "fieldtype": "Int",
+   "label": "Unread Count",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_break_ai",
+   "fieldtype": "Section Break",
+   "label": "AI Context",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "detected_language",
+   "fieldtype": "Select",
+   "label": "Language",
+   "options": "\\nArabic\\nEnglish\\nMixed"
+  },
+  {
+   "fieldname": "customer_intent",
+   "fieldtype": "Select",
+   "label": "Intent",
+   "options": "\\nInquiry\\nSupport\\nSales\\nOther"
+  },
+  {
+   "fieldname": "column_break_ai",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "conversation_summary",
+   "fieldtype": "Long Text",
+   "label": "AI Summary"
+  },
+  {
+   "fieldname": "section_break_qualification",
+   "fieldtype": "Section Break",
+   "label": "Qualification",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "qualified_date",
+   "fieldtype": "Datetime",
+   "label": "Qualified On"
+  },
+  {
+   "fieldname": "qualification_notes",
+   "fieldtype": "Text",
+   "label": "Qualification Notes"
+  },
+  {
+   "fieldname": "section_break_conversion",
+   "fieldtype": "Section Break",
+   "label": "Lead Conversion",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "converted_to_lead",
+   "fieldtype": "Check",
+   "label": "Converted to Lead",
+   "default": "0"
+  },
+  {
+   "fieldname": "lead_reference",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "CRM Lead"
+  },
+  {
+   "fieldname": "column_break_conv2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "converted_date",
+   "fieldtype": "Datetime",
+   "label": "Converted On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "converted_by",
+   "fieldtype": "Link",
+   "label": "Converted By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text Editor",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-01-10 07:44:00.000000",
+ "modified_by": "Administrator",
+ "module": "Frappe Whatsapp",
+ "name": "WhatsApp Contact",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

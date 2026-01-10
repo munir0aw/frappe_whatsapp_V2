@@ -62,10 +62,31 @@ def post():
 
 	whatsapp_account = get_whatsapp_account(phone_id) if phone_id else None
 	if not whatsapp_account:
-		return
+		frappe.log_error(
+			title="WhatsApp Webhook - No Account Found",
+			message=f"phone_id: {phone_id}\nPayload: {json.dumps(data, indent=2)}"
+		)
+		# Fallback to default account
+		try:
+			whatsapp_account = frappe.get_doc("WhatsApp Account", "Main Offile Number")
+		except:
+			return
+	
+	# Route to custom webhook if configured
+	if whatsapp_account and whatsapp_account.custom_webhook_url:
+		route_to_custom_webhook(whatsapp_account, data)
 
 	if messages:
 		for message in messages:
+			sender_phone = message['from']
+			
+			# Get or create WhatsApp Contact
+			whatsapp_contact = get_or_create_whatsapp_contact(
+				mobile_no=sender_phone,
+				contact_name=sender_profile_name,
+				whatsapp_account=whatsapp_account.name
+			)
+			
 			message_type = message['type']
 			is_reply = True if message.get('context') and 'forwarded' not in message.get('context') else False
 			reply_to_message_id = message['context']['id'] if is_reply else None
@@ -80,8 +101,13 @@ def post():
 					"is_reply": is_reply,
 					"content_type":message_type,
 					"profile_name":sender_profile_name,
-					"whatsapp_account":whatsapp_account.name
+					"whatsapp_account":whatsapp_account.name,
+					"reference_doctype": "WhatsApp Contact",
+					"reference_name": whatsapp_contact.name
 				}).insert(ignore_permissions=True)
+				
+				# Update WhatsApp Contact stats
+				update_whatsapp_contact_stats(whatsapp_contact.name, message['text']['body'])
 			elif message_type == 'reaction':
 				frappe.get_doc({
 					"doctype": "WhatsApp Message",
@@ -92,8 +118,13 @@ def post():
 					"message_id": message['id'],
 					"content_type": "reaction",
 					"profile_name":sender_profile_name,
-					"whatsapp_account":whatsapp_account.name
+					"whatsapp_account":whatsapp_account.name,
+					"reference_doctype": "WhatsApp Contact",
+					"reference_name": whatsapp_contact.name
 				}).insert(ignore_permissions=True)
+				
+				# Update WhatsApp Contact stats
+				update_whatsapp_contact_stats(whatsapp_contact.name)
 			elif message_type == 'interactive':
 				interactive_data = message['interactive']
 				interactive_type = interactive_data.get('type')
@@ -110,8 +141,11 @@ def post():
 						"is_reply": is_reply,
 						"content_type": "button",
 						"profile_name": sender_profile_name,
-						"whatsapp_account": whatsapp_account.name
+						"whatsapp_account": whatsapp_account.name,
+						"reference_doctype": "WhatsApp Contact",
+						"reference_name": whatsapp_contact.name
 					}).insert(ignore_permissions=True)
+					update_whatsapp_contact_stats(whatsapp_contact.name)
 				# Handle list reply
 				elif interactive_type == 'list_reply':
 					frappe.get_doc({
@@ -124,8 +158,11 @@ def post():
 						"is_reply": is_reply,
 						"content_type": "button",
 						"profile_name": sender_profile_name,
-						"whatsapp_account": whatsapp_account.name
+						"whatsapp_account": whatsapp_account.name,
+						"reference_doctype": "WhatsApp Contact",
+						"reference_name": whatsapp_contact.name
 					}).insert(ignore_permissions=True)
+					update_whatsapp_contact_stats(whatsapp_contact.name)
 				# Handle WhatsApp Flows (nfm_reply)
 				elif interactive_type == 'nfm_reply':
 					nfm_reply = interactive_data['nfm_reply']
@@ -155,8 +192,13 @@ def post():
 						"content_type": "flow",
 						"flow_response": json.dumps(flow_response),
 						"profile_name": sender_profile_name,
-						"whatsapp_account": whatsapp_account.name
+						"whatsapp_account": whatsapp_account.name,
+						"reference_doctype": "WhatsApp Contact",
+						"reference_name": whatsapp_contact.name
 					}).insert(ignore_permissions=True)
+					
+					# Update WhatsApp Contact stats
+					update_whatsapp_contact_stats(whatsapp_contact.name, summary_message)
 
 					# Publish realtime event for flow response
 					frappe.publish_realtime(
@@ -201,7 +243,9 @@ def post():
 							"message": message[message_type].get("caption", ""),
 							"content_type" : message_type,
 							"profile_name":sender_profile_name,
-							"whatsapp_account":whatsapp_account.name
+							"whatsapp_account":whatsapp_account.name,
+							"reference_doctype": "WhatsApp Contact",
+							"reference_name": whatsapp_contact.name
 						}).insert(ignore_permissions=True)
 
 						file = frappe.get_doc(
@@ -218,6 +262,9 @@ def post():
 
 						message_doc.attach = file.file_url
 						message_doc.save()
+						
+						# Update WhatsApp Contact stats
+						update_whatsapp_contact_stats(whatsapp_contact.name, message[message_type].get("caption", ""))
 			elif message_type == "button":
 				frappe.get_doc({
 					"doctype": "WhatsApp Message",
@@ -229,8 +276,11 @@ def post():
 					"is_reply": is_reply,
 					"content_type": message_type,
 					"profile_name":sender_profile_name,
-					"whatsapp_account":whatsapp_account.name
+					"whatsapp_account":whatsapp_account.name,
+					"reference_doctype": "WhatsApp Contact",
+					"reference_name": whatsapp_contact.name
 				}).insert(ignore_permissions=True)
+				update_whatsapp_contact_stats(whatsapp_contact.name, message['button']['text'])
 			else:
 				frappe.get_doc({
 					"doctype": "WhatsApp Message",
@@ -240,8 +290,11 @@ def post():
 					"message": message[message_type].get(message_type),
 					"content_type" : message_type,
 					"profile_name":sender_profile_name,
-					"whatsapp_account":whatsapp_account.name
+					"whatsapp_account":whatsapp_account.name,
+					"reference_doctype": "WhatsApp Contact",
+					"reference_name": whatsapp_contact.name
 				}).insert(ignore_permissions=True)
+				update_whatsapp_contact_stats(whatsapp_contact.name)
 
 	else:
 		changes = None
@@ -281,3 +334,83 @@ def update_message_status(data):
 	if conversation:
 		doc.conversation_id = conversation
 	doc.save(ignore_permissions=True)
+
+
+def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
+	"""Get existing or create new WhatsApp Contact."""
+	
+	# Check if contact exists
+	existing = frappe.db.exists("WhatsApp Contact", {"mobile_no": mobile_no})
+	
+	if existing:
+		contact = frappe.get_doc("WhatsApp Contact", existing)
+		# Update name if we have new info
+		if contact_name and not contact.contact_name:
+			contact.contact_name = contact_name
+			contact.save(ignore_permissions=True)
+		return contact
+	
+	# Create new contact
+	contact = frappe.get_doc({
+		"doctype": "WhatsApp Contact",
+		"mobile_no": mobile_no,
+		"contact_name": contact_name or mobile_no,
+		"whatsapp_account": whatsapp_account,
+		"first_message_date": frappe.utils.now(),
+		"last_message_date": frappe.utils.now(),
+		"qualification_status": "New",
+		"source": "WhatsApp Incoming",
+		"detected_language": detect_language(contact_name or mobile_no)
+	}).insert(ignore_permissions=True)
+	
+	return contact
+
+
+def update_whatsapp_contact_stats(contact_name, message_text=None):
+	"""Update conversation statistics."""
+	contact = frappe.get_doc("WhatsApp Contact", contact_name)
+	contact.last_message_date = frappe.utils.now()
+	contact.total_messages = (contact.total_messages or 0) + 1
+	contact.unread_count = (contact.unread_count or 0) + 1
+	
+	# Detect language from message
+	if message_text and not contact.detected_language:
+		contact.detected_language = detect_language(message_text)
+	
+	contact.save(ignore_permissions=True)
+
+
+def detect_language(text):
+	"""Simple language detection."""
+	if not text:
+		return "English"
+	
+	arabic_chars = len([c for c in text if '\u0600' <= c <= '\u06FF'])
+	return "Arabic" if arabic_chars > len(text) * 0.3 else "English"
+
+
+def route_to_custom_webhook(whatsapp_account, data):
+	"""Route webhook data to custom webhook URL if configured."""
+	if not whatsapp_account.custom_webhook_url:
+		return False
+	
+	try:
+		response = requests.post(
+			whatsapp_account.custom_webhook_url,
+			json=data,
+			headers={'Content-Type': 'application/json'},
+			timeout=10
+		)
+		
+		frappe.log_error(
+			title=f"Custom Webhook Routed - {whatsapp_account.name}",
+			message=f"URL: {whatsapp_account.custom_webhook_url}\nStatus: {response.status_code}\nResponse: {response.text[:500]}"
+		)
+		return True
+	except Exception as e:
+		frappe.log_error(
+			title=f"Custom Webhook Failed - {whatsapp_account.name}",
+			message=f"URL: {whatsapp_account.custom_webhook_url}\nError: {str(e)}"
+		)
+		return False
+

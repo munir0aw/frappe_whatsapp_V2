@@ -14,6 +14,7 @@
   "url",
   "version",
   "webhook_verify_token",
+  "custom_webhook_url",
   "column_break_byyq",
   "phone_id",
   "app_id",
@@ -63,6 +64,12 @@
    "unique": 1
   },
   {
+   "fieldname": "custom_webhook_url",
+   "fieldtype": "Data",
+   "label": "Custom Webhook URL",
+   "description": "Optional custom webhook URL to receive incoming messages for this account. If empty, uses default webhook."
+  },
+  {
    "fieldname": "column_break_byyq",
    "fieldtype": "Column Break"
   },
@@ -105,7 +112,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-12-01 18:30:21.339317",
+ "modified": "2026-01-10 07:44:00.000000",
  "modified_by": "Administrator",
  "module": "Frappe Whatsapp",
  "name": "WhatsApp Account",
