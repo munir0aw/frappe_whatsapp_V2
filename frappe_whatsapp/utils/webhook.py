@@ -119,9 +119,7 @@ def post():
 				is_reply = True if message.get('context') and 'forwarded' not in message.get('context') else False
 				reply_to_message_id = message['context']['id'] if is_reply else None
 				
-				# Try to find linked CRM Lead by phone number
-				reference_doctype, reference_name = get_linked_reference(sender_phone, whatsapp_contact)
-				
+				# Messages are always linked to WhatsApp Contact
 				msg_dict = {
 					"doctype": "WhatsApp Message",
 					"type": "Incoming",
@@ -131,8 +129,8 @@ def post():
 					"is_reply": is_reply,
 					"profile_name": sender_profile_name,
 					"whatsapp_account": whatsapp_account.name,
-					"reference_doctype": reference_doctype,
-					"reference_name": reference_name
+					"reference_doctype": "WhatsApp Contact",
+					"reference_name": whatsapp_contact.name
 				}
 
 				try:
@@ -285,27 +283,6 @@ def post():
 	return Response("OK", status=200)
 
 
-def get_linked_reference(phone_number, whatsapp_contact):
-	"""Find the best reference document for this phone number.
-	Priority: CRM Lead > WhatsApp Contact
-	"""
-	# Clean phone number variations
-	phone_variants = [phone_number]
-	if phone_number.startswith('+'):
-		phone_variants.append(phone_number[1:])
-	else:
-		phone_variants.append('+' + phone_number)
-	
-	# Try to find CRM Lead by mobile number
-	for phone in phone_variants:
-		lead_name = frappe.db.get_value("CRM Lead", {"mobile_no": phone}, "name")
-		if lead_name:
-			return "CRM Lead", lead_name
-	
-	# Fallback to WhatsApp Contact
-	return "WhatsApp Contact", whatsapp_contact.name
-
-
 def update_status(data):
 	"""Update status hook."""
 	if data.get("field") == "message_template_status_update":
@@ -342,6 +319,21 @@ def update_message_status(data):
 		pass
 
 
+def find_crm_lead_by_phone(phone_number):
+	"""Find CRM Lead by phone number, trying multiple formats."""
+	phone_variants = [phone_number]
+	if phone_number.startswith('+'):
+		phone_variants.append(phone_number[1:])
+	else:
+		phone_variants.append('+' + phone_number)
+	
+	for phone in phone_variants:
+		lead_name = frappe.db.get_value("CRM Lead", {"mobile_no": phone}, "name")
+		if lead_name:
+			return lead_name
+	return None
+
+
 def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 	"""Get existing or create new WhatsApp Contact."""
 	
@@ -357,14 +349,30 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 
 	if existing_name:
 		contact = frappe.get_doc("WhatsApp Contact", existing_name)
+		changed = False
+		
+		# Update name if we have new info
 		if contact_name and (not contact.contact_name or contact.contact_name == contact.mobile_no):
 			contact.contact_name = contact_name
+			changed = True
+		
+		# Check if there's a matching CRM Lead and link it
+		if not contact.lead_reference:
+			lead_name = find_crm_lead_by_phone(mobile_no)
+			if lead_name:
+				contact.lead_reference = lead_name
+				contact.converted_to_lead = 1
+				changed = True
+		
+		if changed:
 			contact.save(ignore_permissions=True)
 		return contact
 	
-	# Create new contact WITHOUT detected_language to avoid validation issues
+	# Create new contact
+	lead_name = find_crm_lead_by_phone(mobile_no)
+	
 	try:
-		contact = frappe.get_doc({
+		contact_doc = {
 			"doctype": "WhatsApp Contact",
 			"mobile_no": mobile_no,
 			"contact_name": contact_name or mobile_no,
@@ -372,8 +380,14 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 			"first_message_date": frappe.utils.now(),
 			"last_message_date": frappe.utils.now(),
 			"source": "WhatsApp Incoming"
-			# NOT setting qualification_status to avoid validation error
-		}).insert(ignore_permissions=True)
+		}
+		
+		# Link to CRM Lead if found
+		if lead_name:
+			contact_doc["lead_reference"] = lead_name
+			contact_doc["converted_to_lead"] = 1
+		
+		contact = frappe.get_doc(contact_doc).insert(ignore_permissions=True)
 		return contact
 	except frappe.DuplicateEntryError:
 		existing_name = frappe.db.exists("WhatsApp Contact", mobile_no)
