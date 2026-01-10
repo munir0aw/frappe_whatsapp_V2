@@ -234,40 +234,51 @@ def last_message(doc, method):
     is_read = 1 if doc.type == 'Outgoing' else 0
 
     if contact_name:
+        # Use set_value to avoid TimestampMismatchError
+        frappe.db.set_value("WhatsApp Contact", contact_name, {
+            "last_message": doc.message,
+            "is_read": is_read,
+            "last_message_date": frappe.utils.now()
+        }, update_modified=False)
+        
+        # Reload doc to get latest state for valid check
         chat_doc = frappe.get_doc("WhatsApp Contact", contact_name)
-        chat_doc.last_message = doc.message
-        chat_doc.is_read = is_read
-        chat_doc.save(ignore_permissions=True)
     else:
         chat_doc = frappe.get_doc({
             "doctype": "WhatsApp Contact",
             "mobile_no": mobile_no,
             "last_message": doc.message,
             "contact_name": mobile_no,
-            "is_read": is_read
+            "is_read": is_read,
+            "first_message_date": frappe.utils.now(),
+            "last_message_date": frappe.utils.now()
         })
         chat_doc.save(ignore_permissions=True)
 
-    if chat_doc.email and doc.type != 'Outgoing':
+    # Publish real-time update
+    if doc.type != 'Outgoing':
         message_data = {
             "content": doc.message or doc.attach or '',
             "creation": frappe.utils.now(),
             "room": chat_doc.name,
             "contact_name": chat_doc.contact_name,
             "sender_user_no": mobile_no,
-            "user": "Guest"
+            "user": "Guest",
+            "name": doc.name
         }
-        # Notify chat list
+        
+        # Notify chat list (Broadcast to ALL users)
         frappe.publish_realtime(
             "latest_chat_updates",
             message_data,
-            user=chat_doc.email
+            after_commit=True
         )
+        
         # Notify open chat room
         frappe.publish_realtime(
             chat_doc.name,
             message_data,
-            user=chat_doc.email
+            after_commit=True
         )
 
     return "ok"
