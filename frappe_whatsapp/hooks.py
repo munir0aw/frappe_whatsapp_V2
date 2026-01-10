@@ -14,14 +14,8 @@ app_license = "MIT"
 # app_include_css = "/assets/frappe_whatsapp/css/frappe_whatsapp.css"
 from frappe import __version__ as frappe_version
 
-is_frappe_above_v13 = int(frappe_version.split('.')[0]) > 13
-
-app_include_css = ['frappe_whatsapp.bundle.css'] if is_frappe_above_v13 else [
-    '/assets/css/frappe_whatsapp.css']
-
-app_include_js = ['frappe_whatsapp.bundle.js'] if is_frappe_above_v13 else [
-    '/assets/frappe_whatsapp/js/frappe_whatsapp.js']
-# app_include_js = ["frappe_whatsapp.js"]
+app_include_css = ['frappe_whatsapp.bundle.css']
+app_include_js = ['frappe_whatsapp.bundle.js']
 
 # include js, css files in header of web template
 # web_include_css = "/assets/frappe_whatsapp/css/frappe_whatsapp.css"
@@ -137,19 +131,19 @@ scheduler_events = {
         "frappe_whatsapp.frappe_whatsapp.doctype.whatsapp_notification.whatsapp_notification.trigger_notifications",
     ],
     "daily_long": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_daily_long",
+        "frappe_whatsapp.utils.trigger_whatsapp_notifications_daily_long"
     ],
     "weekly": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_weekly",
+        "frappe_whatsapp.utils.trigger_whatsapp_notifications_weekly"
     ],
     "weekly_long": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_weekly_long",
+        "frappe_whatsapp.utils.trigger_whatsapp_notifications_weekly_long"
     ],
     "monthly": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_monthly",
+        "frappe_whatsapp.utils.trigger_whatsapp_notifications_monthly"
     ],
     "monthly_long": [
-        "frappe_whatsapp.utils.trigger_whatsapp_notifications_monthly_long",
+        "frappe_whatsapp.utils.trigger_whatsapp_notifications_monthly_long"
     ],
 }
 

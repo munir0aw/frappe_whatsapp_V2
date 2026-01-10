@@ -1,0 +1,4 @@
+{
+  "js/frappe_whatsapp.bundle.js": ["public/js/frappe_whatsapp.bundle.js"],
+  "css/frappe_whatsapp.bundle.css": ["public/css/frappe_whatsapp.bundle.scss"]
+}
