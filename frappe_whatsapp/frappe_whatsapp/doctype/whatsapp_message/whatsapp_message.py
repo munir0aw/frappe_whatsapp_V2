@@ -11,6 +11,48 @@ from frappe_whatsapp.utils import get_whatsapp_account, format_number
 class WhatsAppMessage(Document):
     def validate(self):
         self.set_whatsapp_account()
+        
+        # Ensure message is linked to WhatsApp Contact
+        if not self.whatsapp_contact:
+            # Determine phone number
+            phone = self.to if self.type == "Outgoing" else self.get("from")
+            if phone:
+                # Find or create contact
+                contact_name = self.get_contact_name(phone)
+                if contact_name:
+                    self.whatsapp_contact = contact_name
+
+    def get_contact_name(self, mobile_no):
+        """Find existing contact or return None."""
+        # Check exact match
+        existing_name = frappe.db.exists("WhatsApp Contact", mobile_no)
+        if existing_name: return existing_name
+        
+        # Check with/without +
+        if mobile_no.startswith('+'):
+            existing_name = frappe.db.exists("WhatsApp Contact", mobile_no[1:])
+        else:
+            existing_name = frappe.db.exists("WhatsApp Contact", "+" + mobile_no)
+        
+        if existing_name: return existing_name
+        
+        # If outgoing, we might want to create the contact if it doesn't exist?
+        # For now, let's just create it to be safe so the chat works
+        try:
+             # Import here to avoid circular import issues if any
+            from frappe.utils import now
+            contact = frappe.get_doc({
+                "doctype": "WhatsApp Contact",
+                "mobile_no": mobile_no,
+                "contact_name": mobile_no,
+                "whatsapp_account": self.whatsapp_account,
+                "first_message_date": now(),
+                "last_message_date": now(),
+                "source": "WhatsApp Outgoing" if self.type == "Outgoing" else "WhatsApp Incoming"
+            }).insert(ignore_permissions=True)
+            return contact.name
+        except Exception:
+            return None
 
     def on_update(self):
         self.update_profile_name()

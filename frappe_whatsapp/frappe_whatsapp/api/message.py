@@ -230,10 +230,13 @@ def last_message(doc, method):
 
 
     contact_name = frappe.db.get_value("WhatsApp Contact", filters={"mobile_no": mobile_no})
+    # If Outgoing (User sent it), mark as read (1). If Incoming, mark as unread (0)
+    is_read = 1 if doc.type == 'Outgoing' else 0
+
     if contact_name:
         chat_doc = frappe.get_doc("WhatsApp Contact", contact_name)
         chat_doc.last_message = doc.message
-        chat_doc.is_read = 0
+        chat_doc.is_read = is_read
         chat_doc.save(ignore_permissions=True)
     else:
         chat_doc = frappe.get_doc({
@@ -241,7 +244,7 @@ def last_message(doc, method):
             "mobile_no": mobile_no,
             "last_message": doc.message,
             "contact_name": mobile_no,
-            "is_read": 0
+            "is_read": is_read
         })
         chat_doc.save(ignore_permissions=True)
 

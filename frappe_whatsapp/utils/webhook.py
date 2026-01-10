@@ -312,22 +312,27 @@ def update_template_status(data):
 	)
 
 def update_message_status(data):
-	"""Update message status."""
+	"""Update message status using direct DB update to avoid race conditions."""
 	try:
 		status_data = data['statuses'][0]
-		id = status_data['id']
+		message_id = status_data['id']
 		status = status_data['status']
 		conversation = status_data.get('conversation', {}).get('id')
-		name = frappe.db.get_value("WhatsApp Message", filters={"message_id": id})
+		
+		name = frappe.db.get_value("WhatsApp Message", filters={"message_id": message_id})
 
 		if name:
-			doc = frappe.get_doc("WhatsApp Message", name)
-			doc.status = status
+			# Use set_value to avoid TimestampMismatchError
+			update_dict = {"status": status}
 			if conversation:
-				doc.conversation_id = conversation
-			doc.save(ignore_permissions=True)
+				update_dict["conversation_id"] = conversation
+			
+			frappe.db.set_value("WhatsApp Message", name, update_dict, update_modified=False)
+			frappe.db.commit()
 	except (KeyError, IndexError):
 		pass
+	except Exception as e:
+		frappe.log_error(f"update_message_status error: {str(e)}")
 
 
 def find_crm_lead_by_phone(phone_number):
