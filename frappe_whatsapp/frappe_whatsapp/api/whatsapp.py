@@ -39,6 +39,16 @@ def get_whatsapp_messages(reference_doctype=None, reference_name=None, mobile_no
         # Try CRM Deal
         elif reference_doctype == "CRM Deal":
             deal_mobile = frappe.db.get_value("CRM Deal", reference_name, "mobile_no")
+            if not deal_mobile:
+                 # Try to get from linked Contact (common in CRM)
+                 # Check for 'contact', 'primary_contact', or 'contact_person' fields
+                 contact_name = frappe.db.get_value("CRM Deal", reference_name, ["contact", "primary_contact", "contact_person"])
+                 # contact_name returns a dict, get first non-null value
+                 if contact_name:
+                     c_name = next((v for v in contact_name.values() if v), None)
+                     if c_name:
+                         deal_mobile = frappe.db.get_value("Contact", c_name, "mobile_no")
+
             if deal_mobile:
                 phone_numbers.append(deal_mobile)
         # Try Contact
