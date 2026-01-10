@@ -139,8 +139,8 @@ def post():
 							"message": message['text']['body'],
 							"content_type": message_type
 						})
-						frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-						update_whatsapp_contact_stats(whatsapp_contact.name, message['text']['body'])
+						msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+						update_whatsapp_contact_stats(whatsapp_contact.name, message['text']['body'], msg_doc.name)
 
 					elif message_type == 'reaction':
 						msg_dict.update({
@@ -148,8 +148,8 @@ def post():
 							"reply_to_message_id": message['reaction']['message_id'],
 							"content_type": "reaction"
 						})
-						frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-						update_whatsapp_contact_stats(whatsapp_contact.name)
+						msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+						update_whatsapp_contact_stats(whatsapp_contact.name, None, msg_doc.name)
 
 					elif message_type == 'interactive':
 						interactive_data = message['interactive']
@@ -160,16 +160,16 @@ def post():
 								"message": interactive_data['button_reply']['id'],
 								"content_type": "button"
 							})
-							frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-							update_whatsapp_contact_stats(whatsapp_contact.name)
+							msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+							update_whatsapp_contact_stats(whatsapp_contact.name, None, msg_doc.name)
 							
 						elif interactive_type == 'list_reply':
 							msg_dict.update({
 								"message": interactive_data['list_reply']['id'],
 								"content_type": "button"
 							})
-							frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-							update_whatsapp_contact_stats(whatsapp_contact.name)
+							msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+							update_whatsapp_contact_stats(whatsapp_contact.name, None, msg_doc.name)
 							
 						elif interactive_type == 'nfm_reply':
 							nfm_reply = interactive_data['nfm_reply']
@@ -190,8 +190,8 @@ def post():
 								"content_type": "flow",
 								"flow_response": json.dumps(flow_response)
 							})
-							frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-							update_whatsapp_contact_stats(whatsapp_contact.name, summary_message)
+							msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+							update_whatsapp_contact_stats(whatsapp_contact.name, summary_message, msg_doc.name)
 
 							frappe.publish_realtime(
 								"whatsapp_flow_response",
@@ -239,7 +239,7 @@ def post():
 
 									message_doc.attach = file.file_url
 									message_doc.save(ignore_permissions=True)
-									update_whatsapp_contact_stats(whatsapp_contact.name, message[message_type].get("caption", ""))
+									update_whatsapp_contact_stats(whatsapp_contact.name, message[message_type].get("caption", ""), message_doc.name)
 						except Exception as e:
 							frappe.log_error(f"Media download failed: {str(e)}")
 
@@ -248,8 +248,8 @@ def post():
 							"message": message['button']['text'],
 							"content_type": message_type
 						})
-						frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-						update_whatsapp_contact_stats(whatsapp_contact.name, message['button']['text'])
+						msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+						update_whatsapp_contact_stats(whatsapp_contact.name, message['button']['text'], msg_doc.name)
 						
 					else:
 						msg_content = message.get(message_type, {}).get("body", str(message.get(message_type, "")))
@@ -260,8 +260,8 @@ def post():
 							"message": msg_content,
 							"content_type": message_type
 						})
-						frappe.get_doc(msg_dict).insert(ignore_permissions=True)
-						update_whatsapp_contact_stats(whatsapp_contact.name)
+						msg_doc = frappe.get_doc(msg_dict).insert(ignore_permissions=True)
+						update_whatsapp_contact_stats(whatsapp_contact.name, None, msg_doc.name)
 				except Exception as e:
 					frappe.log_error(title=f"Message Insert Failed: {message_type}", message=str(traceback.format_exc()))
 
@@ -396,8 +396,8 @@ def get_or_create_whatsapp_contact(mobile_no, contact_name, whatsapp_account):
 		raise
 
 
-def update_whatsapp_contact_stats(contact_name, message_text=None):
-	"""Update conversation statistics and chat fields."""
+def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=None):
+	"""Update conversation statistics and publish real-time events."""
 	try:
 		contact = frappe.get_doc("WhatsApp Contact", contact_name)
 		contact.last_message_date = frappe.utils.now()
@@ -410,25 +410,54 @@ def update_whatsapp_contact_stats(contact_name, message_text=None):
 		
 		contact.save(ignore_permissions=True)
 		
+		# Build message data for real-time updates
+		message_data = {
+			"name": message_name,
+			"content": message_text or '',
+			"creation": frappe.utils.now(),
+			"room": contact.name,
+			"contact_name": contact.contact_name,
+			"sender_user_no": contact.mobile_no,
+			"user": "Guest"
+		}
+		
+		# BROADCAST to all users viewing this contact's chat
+		# Use room-based event (contact.name is the room)
+		frappe.publish_realtime(
+			contact.name,
+			message_data,
+			after_commit=True
+		)
+		
+		# Also broadcast to latest_chat_updates for chat list updates
+		frappe.publish_realtime(
+			"latest_chat_updates",
+			message_data,
+			after_commit=True
+		)
+		
+		# If contact is assigned to a specific user, also notify them directly
 		if contact.email:
-			message_data = {
-				"content": message_text or '',
-				"creation": frappe.utils.now(),
-				"room": contact.name,
-				"contact_name": contact.contact_name,
-				"sender_user_no": contact.mobile_no,
-				"user": "Guest"
-			}
 			frappe.publish_realtime(
-				"latest_chat_updates",
+				"chat-notification",
 				message_data,
-				user=contact.email
+				user=contact.email,
+				after_commit=True
 			)
+		
+		# If linked to a CRM Lead, also publish for CRM
+		if contact.lead_reference:
 			frappe.publish_realtime(
-				contact.name,
-				message_data,
-				user=contact.email
+				"whatsapp_message",
+				{
+					"lead": contact.lead_reference,
+					"contact": contact.name,
+					"message": message_text,
+					"message_name": message_name
+				},
+				after_commit=True
 			)
+			
 	except Exception:
 		frappe.log_error(f"Failed to update stats for contact {contact_name}")
 
