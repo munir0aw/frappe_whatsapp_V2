@@ -66,7 +66,7 @@ def post():
 			phone_id = value.get("metadata", {}).get("phone_number_id")
 			
 			if not messages and not phone_id:
-				messages = data["entry"]["changes"][0]["value"].get("messages", [])
+				messages = data["entry"][0]["changes"][0]["value"].get("messages", [])
 		except (KeyError, IndexError):
 			pass
 
