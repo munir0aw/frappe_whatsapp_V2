@@ -434,17 +434,18 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 			WHERE name = %(name)s
 		""", {"name": contact_name})
 		
-		# Fetch fresh doc for real-time publishing
-		contact = frappe.get_doc("WhatsApp Contact", contact_name)
+		# Fetch only needed fields without loading full document (avoids timestamp conflicts)
+		contact_data = frappe.db.get_value("WhatsApp Contact", contact_name, 
+			["email", "lead_reference", "contact_name", "mobile_no"], as_dict=True)
 		
 		# Build message data for real-time updates
 		message_data = {
 			"name": message_name,
 			"content": message_text or '',
 			"creation": frappe.utils.now(),
-			"room": contact.name,
-			"contact_name": contact.contact_name,
-			"sender_user_no": contact.mobile_no,
+			"room": contact_name,
+			"contact_name": contact_data.get("contact_name") if contact_data else contact_name,
+			"sender_user_no": contact_data.get("mobile_no") if contact_data else "",
 			"user": "Guest"
 		}
 		
@@ -465,26 +466,27 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 		# )
 		
 		# If contact is assigned to a specific user, also notify them directly
-		if contact.email:
+		if contact_data and contact_data.get("email"):
 			frappe.publish_realtime(
 				"chat-notification",
 				message_data,
-				user=contact.email,
+				user=contact_data.get("email"),
 				after_commit=True
 			)
 		
 		# If linked to a CRM Lead, also publish for CRM
-		if contact.lead_reference:
+		if contact_data and contact_data.get("lead_reference"):
 			frappe.publish_realtime(
 				"whatsapp_message",
 				{
-					"lead": contact.lead_reference,
-					"contact": contact.name,
+					"lead": contact_data.get("lead_reference"),
+					"contact": contact_name,
 					"message": message_text,
 					"message_name": message_name
 				},
 				after_commit=True
 			)
+			
 			
 	except Exception:
 		frappe.log_error(f"Failed to update stats for contact {contact_name}")
