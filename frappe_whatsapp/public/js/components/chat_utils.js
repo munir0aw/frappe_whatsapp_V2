@@ -172,18 +172,23 @@ function get_avatar_html(room_type, user_email, room_name) {
 
 function set_notification_count(type) {
   const current_count = frappe.Chat.settings.unread_count;
+  const $badge = $('#chat-notification-count');
+  
   if (type === 'increment') {
-    $('#chat-notification-count').text(current_count + 1);
-    frappe.Chat.settings.unread_count += 1;
+    const new_count = current_count + 1;
+    $badge.text(new_count).show();
+    frappe.Chat.settings.unread_count = new_count;
   } else {
-    if (current_count - 1 === 0) {
-      $('#chat-notification-count').text('');
+    const new_count = Math.max(0, current_count - 1);
+    if (new_count === 0) {
+      $badge.text('').hide();
     } else {
-      $('#chat-notification-count').text(current_count - 1);
+      $badge.text(new_count).show();
     }
-    frappe.Chat.settings.unread_count -= 1;
+    frappe.Chat.settings.unread_count = new_count;
   }
 }
+
 
 export {
   get_time,
