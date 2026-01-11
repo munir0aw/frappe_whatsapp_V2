@@ -71,6 +71,12 @@ frappe.Chat = class {
         return;
       }
 
+      // Check if user has WhatsApp Agent role
+      if (!frappe.user_roles.includes('WhatsApp Agent') && !frappe.user_roles.includes('System Manager')) {
+        console.log('User does not have WhatsApp Agent role');
+        return;
+      }
+
       this.create_app();
       await frappe.socketio.init(res.socketio_port);
 
