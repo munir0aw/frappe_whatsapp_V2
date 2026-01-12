@@ -127,7 +127,9 @@ class BulkWhatsAppMessage(Document):
         wa_message = frappe.new_doc("WhatsApp Message")
         # wa_message.from_number = self.from_number
         wa_message.to = recipient.get("mobile_number")
+        wa_message.type = "Outgoing"  # CRITICAL: Required to trigger send in before_insert
         wa_message.message_type = "Text"
+        wa_message.content_type = "text"  # Required for non-template messages
         # wa_message.message = message_content
         wa_message.flags.custom_ref_doc = json.loads(recipient.get("recipient_data", "{}"))
         wa_message.bulk_message_reference = self.name
@@ -148,11 +150,16 @@ class BulkWhatsAppMessage(Document):
             if self.attach:
                 wa_message.attach = self.attach
         
-        # Set status to queued
+        # Set status to queued (will be updated when sent)
         wa_message.status = "Queued"
         try:
             wa_message.insert(ignore_permissions=True)
-        except Exception:
+            frappe.db.commit()  # Commit immediately to ensure message is created
+        except Exception as e:
+            frappe.log_error(
+                title=f"Bulk Message Failed: {recipient.get('mobile_number')}",
+                message=f"Bulk Message: {self.name}\nRecipient: {recipient.get('mobile_number')}\nError: {str(e)}"
+            )
             self.db_set("status", "Partially Failed")
         # Update message count
         self.db_set("sent_count", cint(self.sent_count) + 1)
