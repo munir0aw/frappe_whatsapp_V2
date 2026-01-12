@@ -12,11 +12,9 @@
   "column_break_bthp",
   "status",
   "id",
-  "section_break_fxqh",
+  "section_break_meta",
   "template",
   "sample_values",
-  "for_doctype",
-  "field_names",
   "column_break_6",
   "category",
   "language",
@@ -29,7 +27,10 @@
   "column_break_tbvf",
   "footer",
   "section_break_wu2vp",
-  "buttons"
+  "buttons",
+  "section_break_local",
+  "for_doctype",
+  "field_names"
  ],
  "fields": [
   {
@@ -121,8 +122,10 @@
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "section_break_fxqh",
-   "fieldtype": "Section Break"
+   "collapsible": 1,
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "label": "Meta Template Configuration"
   },
   {
    "fieldname": "actual_name",
@@ -158,8 +161,14 @@
   },
   {
    "fieldname": "section_break_wu2vp",
-   "fieldtype": "Section Break"
- },
+   "fieldtype": "Section Break",
+   "label": "Buttons"
+  },
+  {
+   "fieldname": "section_break_local",
+   "fieldtype": "Section Break",
+   "label": "Local Settings (Frappe Only)"
+  },
  {
   "fieldname": "whatsapp_account",
    "fieldtype": "Link",

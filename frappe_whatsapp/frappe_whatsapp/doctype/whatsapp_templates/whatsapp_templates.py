@@ -25,8 +25,26 @@ class WhatsAppTemplates(Document):
             self.get_session_id()
             self.get_media_id()
 
-        if not self.is_new():
+        # Only update Meta template if Meta fields changed
+        if not self.is_new() and self.has_meta_changes():
             self.update_template()
+    
+    def has_meta_changes(self):
+        """Check if any Meta-related fields have changed."""
+        meta_fields = [
+            "template", "category", "language", "header_type", 
+            "header", "footer", "sample", "sample_values", "buttons"
+        ]
+        
+        for field in meta_fields:
+            if self.has_value_changed(field):
+                return True
+        
+        # Check if buttons changed
+        if self.has_value_changed("buttons"):
+            return True
+            
+        return False
 
     def set_whatsapp_account(self):
         """Set whatsapp account to default if missing"""
