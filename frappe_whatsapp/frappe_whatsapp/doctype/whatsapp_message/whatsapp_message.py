@@ -369,16 +369,32 @@ class WhatsAppMessage(Document):
                     error_message = res.get("Error", res.get("message"))
             except:
                 pass
+            
+            # Truncate error message to prevent database constraint violations
+            data_str = json.dumps(data)
+            error_str = str(error_message)
+            
+            # Limit meta_data to 5000 characters to avoid database constraints
+            meta_data_content = f"Data: {data_str}\nError: {error_str}"
+            if len(meta_data_content) > 5000:
+                meta_data_content = meta_data_content[:4950] + "... (truncated)"
+            
+            # Log full error for debugging
+            frappe.log_error(
+                title=f"WhatsApp Send Failed: {self.to}",
+                message=f"Full Data: {data_str}\n\nFull Error: {error_str}"
+            )
                 
             frappe.get_doc(
                 {
                     "doctype": "WhatsApp Notification Log",
                     "template": "Text Message",
-                    "meta_data": f"Data: {json.dumps(data)}\nError: {error_message}",
+                    "meta_data": meta_data_content,
                 }
             ).insert(ignore_permissions=True)
 
             frappe.throw(msg=error_message, title=res.get("error_user_title", "Error"))
+
 
     def format_number(self, number):
         """Format number."""

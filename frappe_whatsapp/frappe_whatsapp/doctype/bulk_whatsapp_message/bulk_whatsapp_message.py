@@ -21,6 +21,8 @@ class BulkWhatsAppMessage(Document):
     def validate(self):
         # self.validate_message()
         self.validate_recipients()
+        if self.use_template:
+            self.validate_template_variables()
     
     def validate_message(self):
         if not self.message_content:
@@ -39,6 +41,42 @@ class BulkWhatsAppMessage(Document):
         # If individual recipients are provided
         elif self.recipients:
             self.recipient_count = len(self.recipients)
+    
+    def validate_template_variables(self):
+        """Validate template variables configuration"""
+        if not self.template:
+            frappe.throw(_("Please select a template"))
+        
+        template_doc = frappe.get_doc("WhatsApp Templates", self.template)
+        
+        # Check if template needs variables
+        if not template_doc.sample_values:
+            return  # No variables needed
+        
+        # Get expected number of variables
+        expected_count = len(template_doc.sample_values.split(","))
+        
+        if self.variable_type == 'Common':
+            if not self.template_variables:
+                frappe.throw(_("Template Variables are required for this template"))
+            
+            try:
+                variables = json.loads(self.template_variables)
+                if not isinstance(variables, list):
+                    frappe.throw(_("Template Variables must be a JSON array like: [\"value1\", \"value2\"]"))
+                
+                if len(variables) != expected_count:
+                    frappe.throw(_(f"This template requires {expected_count} variable(s), but {len(variables)} provided"))
+                    
+            except json.JSONDecodeError:
+                frappe.throw(_("Template Variables must be valid JSON format: [\"value1\", \"value2\"]"))
+        
+        elif self.variable_type == 'Unique':
+            # Validate that recipients have data
+            if self.recipient_type == 'Individual' and self.recipients:
+                for recipient in self.recipients:
+                    if not recipient.recipient_data:
+                        frappe.msgprint(_(f"Warning: Recipient {recipient.mobile_number} has no data. Message may fail."), indicator="orange")
     
     def on_submit(self):
         self.db_set("status", "Queued")

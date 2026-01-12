@@ -96,10 +96,11 @@
    "options": "WhatsApp Templates"
   },
   {
-   "depends_on": "eval:doc.use_template==1",
+   "depends_on": "eval:doc.use_template==1 && doc.variable_type=='Common'",
+   "description": "JSON array of values (not field names). Example: [\"Ahmed\", \"ORD-1023\"]. These exact values will be sent to ALL recipients.",
    "fieldname": "template_variables",
    "fieldtype": "Code",
-   "label": "Template Variables",
+   "label": "Template Variables (Common Values)",
    "options": "JSON"
   },
   {
@@ -147,6 +148,7 @@
   {
    "default": "Common",
    "depends_on": "eval:doc.use_template==1",
+   "description": "Common: Same values for all recipients (use Template Variables). Unique: Different values per recipient (use Recipient Data)",
    "fieldname": "variable_type",
    "fieldtype": "Select",
    "label": "Variable Type",
