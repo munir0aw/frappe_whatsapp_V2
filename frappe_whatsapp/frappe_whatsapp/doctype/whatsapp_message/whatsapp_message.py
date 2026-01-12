@@ -321,24 +321,18 @@ class WhatsAppMessage(Document):
                         "index": str(idx),
                         "parameters": [{"type": "payload", "payload": btn.button_label}]
                     })
-                elif btn.button_type == "Call Phone":
-                    button_parameters.append({
-                        "type": "button",
-                        "sub_type": "phone_number",
-                        "index": str(idx),
-                        "parameters": [{"type": "text", "text": btn.phone_number}]
-                    })
-                elif btn.button_type == "Visit Website":
-                    url = btn.website_url
-                    if btn.url_type == "Dynamic":
-                        ref_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
-                        url = ref_doc.get_formatted(btn.website_url)
+                # Only send URL button parameter if it's Dynamic
+                elif btn.button_type == "Visit Website" and btn.url_type == "Dynamic":
+                    ref_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
+                    url = ref_doc.get_formatted(btn.website_url)
                     button_parameters.append({
                         "type": "button",
                         "sub_type": "url",
                         "index": str(idx),
                         "parameters": [{"type": "text", "text": url}]
                     })
+                # Static phone and static URL buttons: NO parameters needed!
+                # WhatsApp gets these from the approved template itself
 
             if button_parameters:
                 data['template']['components'].extend(button_parameters)
