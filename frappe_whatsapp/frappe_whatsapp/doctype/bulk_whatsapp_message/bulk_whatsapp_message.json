@@ -22,6 +22,7 @@
   "whatsapp_account",
   "column_break_hztf",
   "template_variables",
+  "template_values",
   "section_status",
   "status",
   "scheduled_time",
@@ -96,12 +97,21 @@
    "options": "WhatsApp Templates"
   },
   {
-   "depends_on": "eval:doc.use_template==1 && doc.variable_type=='Common'",
+   "depends_on": "eval:doc.use_template==1 && doc.variable_type==1",
    "description": "JSON array of values (not field names). Example: [\"Ahmed\", \"ORD-1023\"]. These exact values will be sent to ALL recipients.",
    "fieldname": "template_variables",
    "fieldtype": "Code",
+   "hidden": 1,
    "label": "Template Variables (Common Values)",
    "options": "JSON"
+  },
+  {
+   "depends_on": "eval:doc.use_template==1 && doc.variable_type==1",
+   "description": "Add values for each template variable. Order matters: first row = {{1}}, second row = {{2}}, etc.",
+   "fieldname": "template_values",
+   "fieldtype": "Table",
+   "label": "Template Values",
+   "options": "Template Variable Value"
   },
   {
    "fieldname": "section_status",
@@ -146,13 +156,12 @@
    "label": "Attach"
   },
   {
-   "default": "Common",
+   "default": "1",
    "depends_on": "eval:doc.use_template==1",
-   "description": "Common: Same values for all recipients (use Template Variables). Unique: Different values per recipient (use Recipient Data)",
+   "description": "Check to use the same values for all recipients (Template Values table). Uncheck to use different values per recipient (Recipient Data)",
    "fieldname": "variable_type",
-   "fieldtype": "Select",
-   "label": "Variable Type",
-   "options": "Common\nUnique"
+   "fieldtype": "Check",
+   "label": "Use Template Values (Same for All)"
   },
   {
    "fieldname": "whatsapp_account",

@@ -19,10 +19,26 @@ class BulkWhatsAppMessage(Document):
         self.name = make_autoname("BULK-WA-.YYYY.-.#####")
     
     def validate(self):
-        # self.validate_message()
-        self.validate_recipients()
+        # self.validate_message()\n        self.validate_recipients()
+        self.convert_recipient_values_to_json()  # Convert value columns to JSON
         if self.use_template:
             self.validate_template_variables()
+    
+    def convert_recipient_values_to_json(self):
+        """Convert value1, value2, value3 columns to recipient_data JSON"""
+        if not self.variable_type and self.recipients:  # Unchecked = Use recipient data
+            for recipient in self.recipients:
+                # Build JSON from value columns
+                data = {}
+                if recipient.value1:
+                    data["value1"] = recipient.value1
+                if recipient.value2:
+                    data["value2"] = recipient.value2
+                if recipient.value3:
+                    data["value3"] = recipient.value3
+                
+                if data:
+                    recipient.recipient_data = json.dumps(data)
     
     def validate_message(self):
         if not self.message_content:
@@ -56,22 +72,33 @@ class BulkWhatsAppMessage(Document):
         # Get expected number of variables
         expected_count = len(template_doc.sample_values.split(","))
         
-        if self.variable_type == 'Common':
-            if not self.template_variables:
-                frappe.throw(_("Template Variables are required for this template"))
-            
-            try:
-                variables = json.loads(self.template_variables)
-                if not isinstance(variables, list):
-                    frappe.throw(_("Template Variables must be a JSON array like: [\"value1\", \"value2\"]"))
+        if self.variable_type:  # Checked = Use template values
+            # Convert table to JSON format for processing
+            if self.template_values:
+                values_list = []
+                for idx, row in enumerate(self.template_values, start=1):
+                    row.position = idx  # Auto-number
+                    values_list.append(row.value)
                 
-                if len(variables) != expected_count:
-                    frappe.throw(_(f"This template requires {expected_count} variable(s), but {len(variables)} provided"))
-                    
-            except json.JSONDecodeError:
-                frappe.throw(_("Template Variables must be valid JSON format: [\"value1\", \"value2\"]"))
+                # Store as JSON in hidden field
+                self.template_variables = json.dumps(values_list)
+                
+                if len(values_list) != expected_count:
+                    frappe.throw(_(f"This template requires {expected_count} variable(s), but {len(values_list)} provided"))
+            elif self.template_variables:
+                # Backward compatibility: JSON still works
+                try:
+                    variables = json.loads(self.template_variables)
+                    if not isinstance(variables, list):
+                        frappe.throw(_("Template Variables must be a JSON array like: [\"value1\", \"value2\"]"))
+                    if len(variables) != expected_count:
+                        frappe.throw(_(f"This template requires {expected_count} variable(s), but {len(variables)} provided"))
+                except json.JSONDecodeError:
+                    frappe.throw(_("Template Variables must be valid JSON format: [\"value1\", \"value2\"]"))
+            else:
+                frappe.throw(_("Template Values are required for this template"))
         
-        elif self.variable_type == 'Unique':
+        else:  # Unchecked = Use recipient data
             # Validate that recipients have data
             if self.recipient_type == 'Individual' and self.recipients:
                 for recipient in self.recipients:
@@ -143,10 +170,12 @@ class BulkWhatsAppMessage(Document):
             wa_message.use_template = self.use_template
             # Handle template variables if needed
 
-            if recipient.get("recipient_data") and self.variable_type=='Unique':
-                wa_message.body_param = recipient.get("recipient_data")
-            elif self.template_variables and self.variable_type=='Common':
+            if self.variable_type:  # Checked = Use template values (same for all)
                 wa_message.body_param = self.template_variables
+            else:  # Unchecked = Use recipient specific data
+                if recipient.get("recipient_data"):
+                    wa_message.body_param = recipient.get("recipient_data")
+            
             if self.attach:
                 wa_message.attach = self.attach
         

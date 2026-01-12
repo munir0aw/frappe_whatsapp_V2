@@ -240,9 +240,20 @@ class WhatsAppMessage(Document):
             template_parameters = []
 
             if self.body_param is not None:
-                params = list(json.loads(self.body_param).values())
+                parsed_param = json.loads(self.body_param)
+                
+                # Handle both list format ["value1", "value2"] and dict format {"key1": "value1"}
+                if isinstance(parsed_param, list):
+                    # Direct list of values from bulk messaging Common variables
+                    params = parsed_param
+                elif isinstance(parsed_param, dict):
+                    # Dictionary format from Unique variables or CRM
+                    params = list(parsed_param.values())
+                else:
+                    params = [parsed_param]
+                
                 for param in params:
-                    parameters.append({"type": "text", "text": param})
+                    parameters.append({"type": "text", "text": str(param)})
                     template_parameters.append(param)
             elif self.flags.custom_ref_doc:
                 custom_values = self.flags.custom_ref_doc
