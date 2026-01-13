@@ -311,39 +311,55 @@ class WhatsAppMessage(Document):
                 }
             )
 
-        if template.header_type:
-            if self.attach:
-                if template.header_type == 'IMAGE':
-
-                    if self.attach.startswith("http"):
-                        url = f'{self.attach}'
-                    else:
-                        url = f'{frappe.utils.get_url()}{self.attach}'
-                    data['template']['components'].append({
-                        "type": "header",
-                        "parameters": [{
-                            "type": "image",
-                            "image": {
-                                "link": url
-                            }
-                        }]
-                    })
-
-            elif template.sample:
-                if template.header_type == 'IMAGE':
-                    if template.sample.startswith("http"):
-                        url = f'{template.sample}'
-                    else:
-                        url = f'{frappe.utils.get_url()}{template.sample}'
-                    data['template']['components'].append({
-                        "type": "header",
-                        "parameters": [{
-                            "type": "image",
-                            "image": {
-                                "link": url
-                            }
-                        }]
-                    })
+        # Only send header parameters if:
+        # 1. User explicitly attached a file (override template header)
+        # 2. Template has dynamic header that needs an image URL
+        # Do NOT send if template has static image (baked into Meta template)
+        if template.header_type and self.attach:
+            if template.header_type == 'IMAGE':
+                if self.attach.startswith("http"):
+                    url = f'{self.attach}'
+                else:
+                    url = f'{frappe.utils.get_url()}{self.attach}'
+                data['template']['components'].append({
+                    "type": "header",
+                    "parameters": [{
+                        "type": "image",
+                        "image": {
+                            "link": url
+                        }
+                    }]
+                })
+            elif template.header_type == 'VIDEO':
+                if self.attach.startswith("http"):
+                    url = f'{self.attach}'
+                else:
+                    url = f'{frappe.utils.get_url()}{self.attach}'
+                data['template']['components'].append({
+                    "type": "header",
+                    "parameters": [{
+                        "type": "video",
+                        "video": {
+                            "link": url
+                        }
+                    }]
+                })
+            elif template.header_type == 'DOCUMENT':
+                if self.attach.startswith("http"):
+                    url = f'{self.attach}'
+                else:
+                    url = f'{frappe.utils.get_url()}{self.attach}'
+                data['template']['components'].append({
+                    "type": "header",
+                    "parameters": [{
+                        "type": "document",
+                        "document": {
+                            "link": url
+                        }
+                    }]
+                })
+        # NOTE: If template.sample exists but no self.attach, header is STATIC
+        # Static headers are baked into the Meta template - don't send params
 
         if template.buttons:
             button_parameters = []
