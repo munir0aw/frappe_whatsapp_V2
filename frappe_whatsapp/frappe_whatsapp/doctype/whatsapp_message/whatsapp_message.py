@@ -12,6 +12,10 @@ class WhatsAppMessage(Document):
     def validate(self):
         self.set_whatsapp_account()
         
+        # Validate template requirements if using template
+        if self.use_template and self.template:
+            self.validate_template_compliance()
+        
         # Ensure message is linked to WhatsApp Contact
         if not self.whatsapp_contact:
             # Determine phone number
@@ -21,6 +25,36 @@ class WhatsAppMessage(Document):
                 contact_name = self.get_contact_name(phone)
                 if contact_name:
                     self.whatsapp_contact = contact_name
+    
+    def validate_template_compliance(self):
+        """Validate message complies with template requirements"""
+        template_doc = frappe.get_doc("WhatsApp Templates", self.template)
+        
+        # Check template is approved
+        if template_doc.status != "APPROVED":
+            frappe.throw(_(f"Template '{template_doc.template_name}' is not approved. Status: {template_doc.status}"))
+        
+        # Check header/attachment requirements
+        if template_doc.header_type in ["IMAGE", "VIDEO", "DOCUMENT"]:
+            if not self.attach and not template_doc.sample:
+                frappe.throw(_(f"This template requires a {template_doc.header_type.lower()} attachment."))
+        
+        # Check variable count if template has variables
+        if template_doc.sample_values and self.body_param:
+            expected_count = len(template_doc.sample_values.split(","))
+            try:
+                params = json.loads(self.body_param)
+                if isinstance(params, list):
+                    actual_count = len(params)
+                elif isinstance(params, dict):
+                    actual_count = len(params.values())
+                else:
+                    actual_count = 1
+                    
+                if actual_count != expected_count:
+                    frappe.throw(_(f"Template requires {expected_count} variable(s), but {actual_count} provided."))
+            except json.JSONDecodeError:
+                frappe.throw(_("Invalid body_param format. Must be valid JSON."))
 
     def get_contact_name(self, mobile_no):
         """Find existing contact or return None."""
@@ -316,21 +350,27 @@ class WhatsAppMessage(Document):
             quick_reply_idx = 0  # Separate counter for quick reply buttons
             for idx, btn in enumerate(template.buttons):
                 if btn.button_type == "Quick Reply":
+                    # Use unique payload format for Meta API compliance
+                    payload = f"QR_{quick_reply_idx}_{btn.button_label[:50]}"
                     button_parameters.append({
                         "type": "button",
                         "sub_type": "quick_reply",
                         "index": str(quick_reply_idx),
-                        "parameters": [{"type": "payload", "payload": btn.button_label}]
+                        "parameters": [{"type": "payload", "payload": payload}]
                     })
                     quick_reply_idx += 1
                 # Only send URL button parameter if it's Dynamic
                 elif btn.button_type == "Visit Website" and btn.url_type == "Dynamic":
                     ref_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
                     url = ref_doc.get_formatted(btn.website_url)
+                    # For dynamic URL, index counts only URL buttons with dynamic suffix
+                    # Get count of dynamic URL buttons before this one
+                    dynamic_url_idx = sum(1 for b in template.buttons[:idx] 
+                                         if b.button_type == "Visit Website" and b.url_type == "Dynamic")
                     button_parameters.append({
                         "type": "button",
                         "sub_type": "url",
-                        "index": str(idx),
+                        "index": str(dynamic_url_idx),
                         "parameters": [{"type": "text", "text": url}]
                     })
                 # Static phone and static URL buttons: NO parameters needed!

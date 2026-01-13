@@ -25,9 +25,10 @@ class WhatsAppTemplates(Document):
             self.get_session_id()
             self.get_media_id()
 
-        # Only update Meta template if Meta fields changed
-        if not self.is_new() and self.has_meta_changes():
-            self.update_template()
+        # DISABLED: Auto-push to Meta on save causes errors for approved templates
+        # Use 'Fetch from Meta' action or create new template in Meta Business Manager
+        # if not self.is_new() and self.has_meta_changes():
+        #     self.update_template()
     
     def has_meta_changes(self):
         """Check if any Meta-related fields have changed."""
