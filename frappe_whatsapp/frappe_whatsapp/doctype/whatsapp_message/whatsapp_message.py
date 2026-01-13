@@ -313,14 +313,16 @@ class WhatsAppMessage(Document):
 
         if template.buttons:
             button_parameters = []
+            quick_reply_idx = 0  # Separate counter for quick reply buttons
             for idx, btn in enumerate(template.buttons):
                 if btn.button_type == "Quick Reply":
                     button_parameters.append({
                         "type": "button",
                         "sub_type": "quick_reply",
-                        "index": str(idx),
+                        "index": str(quick_reply_idx),
                         "parameters": [{"type": "payload", "payload": btn.button_label}]
                     })
+                    quick_reply_idx += 1
                 # Only send URL button parameter if it's Dynamic
                 elif btn.button_type == "Visit Website" and btn.url_type == "Dynamic":
                     ref_doc = frappe.get_doc(self.reference_doctype, self.reference_name)
