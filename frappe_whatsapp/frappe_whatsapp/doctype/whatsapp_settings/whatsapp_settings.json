@@ -8,7 +8,12 @@
  "field_order": [
   "default_incoming_account",
   "column_break_xsuw",
-  "default_outgoing_account"
+  "default_outgoing_account",
+  "section_break_webhook",
+  "filter_service_messages",
+  "column_break_logging",
+  "enable_debug_logs",
+  "enable_webhook_payload_logs"
  ],
  "fields": [
   {
@@ -22,6 +27,33 @@
    "fieldtype": "Link",
    "label": "Default Outgoing Account",
    "options": "WhatsApp Account"
+  },
+  {
+   "fieldname": "section_break_webhook",
+   "fieldtype": "Section Break",
+   "label": "Webhook Configuration"
+  },
+  {
+   "fieldname": "filter_service_messages",
+   "fieldtype": "Check",
+   "label": "Filter Service Messages",
+   "description": "When enabled, only send actual message events to custom webhooks (not status updates like 'read', 'delivered', etc.)"
+  },
+  {
+   "fieldname": "column_break_logging",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "enable_debug_logs",
+   "fieldtype": "Check",
+   "label": "Enable Debug Logs",
+   "description": "Enable debug logging for webhook events"
+  },
+  {
+   "fieldname": "enable_webhook_payload_logs",
+   "fieldtype": "Check",
+   "label": "Enable Webhook Payload Logs",
+   "description": "Log full webhook payloads to Error Log"
   },
   {
    "fieldname": "column_break_skjo",

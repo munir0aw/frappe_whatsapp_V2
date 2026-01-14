@@ -39,11 +39,16 @@ def post():
 	"""Post."""
 	try:
 		data = frappe.local.form_dict
-		# DEBUG LOGGING
-		try:
-			frappe.log_error(title="WhatsApp Webhook Payload", message=json.dumps(data, indent=2))
-		except:
-			pass
+		
+		# Load WhatsApp Settings for configuration
+		settings = frappe.get_single("WhatsApp Settings")
+		
+		# CONDITIONAL WEBHOOK PAYLOAD LOGGING
+		if settings.get("enable_webhook_payload_logs"):
+			try:
+				frappe.log_error(title="WhatsApp Webhook Payload", message=json.dumps(data, indent=2))
+			except:
+				pass
 
 		# Log to doc
 		try:
@@ -70,7 +75,9 @@ def post():
 		except (KeyError, IndexError):
 			pass
 
-		frappe.log_error(title="WhatsApp Debug", message=f"Messages found: {len(messages)}, Phone ID: {phone_id}")
+		# CONDITIONAL DEBUG LOGGING
+		if settings.get("enable_debug_logs"):
+			frappe.log_error(title="WhatsApp Debug", message=f"Messages found: {len(messages)}, Phone ID: {phone_id}")
 
 		sender_profile_name = next(
 			(
@@ -96,7 +103,7 @@ def post():
 		
 		# Route to custom webhook if configured
 		if whatsapp_account and whatsapp_account.custom_webhook_url:
-			route_to_custom_webhook(whatsapp_account, data)
+			route_to_custom_webhook(whatsapp_account, data, settings)
 
 		if messages:
 			for message in messages:
@@ -492,10 +499,33 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 		frappe.log_error(f"Failed to update stats for contact {contact_name}")
 
 
-def route_to_custom_webhook(whatsapp_account, data):
+def route_to_custom_webhook(whatsapp_account, data, settings=None):
 	"""Route webhook data to custom webhook URL if configured."""
 	if not whatsapp_account.custom_webhook_url:
 		return False
+	
+	# Filter service messages if configured
+	if settings and settings.get("filter_service_messages"):
+		# Check if this webhook contains actual messages (not just status updates)
+		try:
+			entry = data.get("entry", [{}])[0]
+			changes = entry.get("changes", [{}])[0]
+			value = changes.get("value", {})
+			
+			# Only send to custom webhook if there are actual messages
+			# Skip if it's just status updates (read, delivered, etc.)
+			messages = value.get("messages", [])
+			if not messages:
+				# This is a service/status message, skip routing to custom webhook
+				if settings.get("enable_debug_logs"):
+					frappe.log_error(
+						title="WhatsApp Webhook - Service Message Filtered",
+						message=f"Skipped routing service message to custom webhook: {json.dumps(data, indent=2)[:500]}"
+					)
+				return False
+		except (KeyError, IndexError):
+			# If we can't parse the structure, skip it to be safe
+			return False
 	
 	try:
 		# Determine Bot Status
@@ -542,4 +572,4 @@ def route_to_custom_webhook(whatsapp_account, data):
 			title=f"Custom Webhook Failed - {whatsapp_account.name}",
 			message=f"URL: {whatsapp_account.custom_webhook_url}\nError: {str(e)}"
 		)
-		return False
+	return False
