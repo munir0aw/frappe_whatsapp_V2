@@ -67,8 +67,12 @@ def get_whatsapp_messages(reference_doctype=None, reference_name=None, mobile_no
             for wc in wa_contacts:
                 if wc.mobile_no:
                     phone_numbers.append(wc.mobile_no)
+    # Also check if Lead has whatsapp_contact field (new integration)
+    whatsapp_contact_id = None
+    if reference_doctype == "CRM Lead" and reference_name:
+        whatsapp_contact_id = frappe.db.get_value("CRM Lead", reference_name, "whatsapp_contact")
     
-    if not phone_numbers:
+    if not phone_numbers and not whatsapp_contact_id:
         return []
     
     # Add phone number variants (with/without +)
@@ -83,9 +87,23 @@ def get_whatsapp_messages(reference_doctype=None, reference_name=None, mobile_no
     # Remove duplicates
     all_variants = list(set(all_variants))
     
-    # Query messages
-    messages = frappe.db.sql("""
-        SELECT 
+    # Build query conditions
+    conditions = []
+    values = {}
+    
+    if all_variants:
+        conditions.append("(`to` IN %(phones)s OR `from` IN %(phones)s)")
+        values["phones"] = all_variants
+    
+    if whatsapp_contact_id:
+        conditions.append("whatsapp_contact = %(wa_contact)s")
+        values["wa_contact"] = whatsapp_contact_id
+    
+    where_clause = " OR ".join(conditions)
+    
+    # Query messages with DISTINCT to avoid duplicates
+    messages = frappe.db.sql(f"""
+        SELECT DISTINCT
             name,
             creation,
             modified,
@@ -102,9 +120,9 @@ def get_whatsapp_messages(reference_doctype=None, reference_name=None, mobile_no
             reference_doctype,
             reference_name
         FROM `tabWhatsApp Message` 
-        WHERE (`to` IN %(phones)s OR `from` IN %(phones)s)
+        WHERE {where_clause}
         ORDER BY creation ASC
-    """, {"phones": all_variants}, as_dict=True)
+    """, values, as_dict=True)
     
     return messages
 
