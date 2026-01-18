@@ -5,8 +5,8 @@ frappe.pages['whatsapp_chat'].on_page_load = function(wrapper) {
 		single_column: true
 	});
 
-	// Remove default padding
-	page.$body.css('padding', '0');
+	// Remove default padding using jQuery
+	$(page.body).css('padding', '0');
 	
 	page.whatsapp_chat = new WhatsAppChatApp(page);
 };
