@@ -1,4 +1,4 @@
-frappe.pages['whatsapp-chat'].on_page_load = function(wrapper) {
+frappe.pages['whatsapp_chat'].on_page_load = function(wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: 'WhatsApp Conversations',
@@ -329,6 +329,6 @@ class WhatsAppChat {
 frappe.provide('whatsapp_chat');
 window.whatsapp_chat = null;
 
-frappe.pages['whatsapp-chat'].on_page_show = function(wrapper) {
+frappe.pages['whatsapp_chat'].on_page_show = function(wrapper) {
 	window.whatsapp_chat = wrapper.page.whatsapp_chat;
 };

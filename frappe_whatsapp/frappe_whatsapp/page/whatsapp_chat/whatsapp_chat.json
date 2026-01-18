@@ -5,9 +5,9 @@
  "modified": "2026-01-18 11:13:00.000000",
  "modified_by": "Administrator",
  "module": "Frappe Whatsapp",
- "name": "whatsapp-chat",
+ "name": "whatsapp_chat",
  "owner": "Administrator",
- "page_name": "whatsapp-chat",
+ "page_name": "whatsapp_chat",
  "roles": [
   {
    "role": "System Manager"
