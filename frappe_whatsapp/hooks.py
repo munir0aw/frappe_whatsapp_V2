@@ -214,6 +214,9 @@ doc_events = {
     },
     "WhatsApp Message": {
         "after_insert": "frappe_whatsapp.frappe_whatsapp.api.message.last_message"
+    },
+    "CRM Lead": {
+        "validate": "frappe_whatsapp.utils.crm_integration.link_whatsapp_contact_to_lead"
     }
 }
 

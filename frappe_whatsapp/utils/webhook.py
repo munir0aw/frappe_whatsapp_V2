@@ -130,12 +130,13 @@ def post():
 				lead_name = whatsapp_contact.lead_reference if whatsapp_contact.lead_reference else find_crm_lead_by_phone(sender_phone)
 				
 				# DUAL LINKING: Link to Lead (for CRM) AND WhatsApp Contact (for chat widget)
+				# DUAL LINKING: Link to Lead (for CRM) if found
 				if lead_name:
 					reference_doctype = "CRM Lead"
 					reference_name = lead_name
 				else:
-					reference_doctype = "WhatsApp Contact"
-					reference_name = whatsapp_contact.name
+					reference_doctype = None
+					reference_name = None
 				
 				msg_dict = {
 					"doctype": "WhatsApp Message",

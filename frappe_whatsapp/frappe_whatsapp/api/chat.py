@@ -62,6 +62,21 @@ def send_message(contact_id, message=None, file_url=None):
 	# Get contact
 	contact = frappe.get_doc("WhatsApp Contact", contact_id)
 	
+	# Check if we should link to a Lead (if not already linked)
+	if not contact.lead_reference:
+		# Try multiple formats for phone number
+		phones = [contact.mobile_no]
+		if contact.mobile_no.startswith('+'):
+			phones.append(contact.mobile_no[1:])
+		else:
+			phones.append('+' + contact.mobile_no)
+			
+		lead = frappe.db.get_value("CRM Lead", {"mobile_no": ["in", phones]}, "name")
+		if lead:
+			contact.lead_reference = lead
+			contact.converted_to_lead = 1
+			contact.save(ignore_permissions=True)
+
 	# Determine content type
 	content_type = "text"
 	if file_url:
@@ -84,7 +99,9 @@ def send_message(contact_id, message=None, file_url=None):
 		"content_type": content_type,
 		"attach": file_url,
 		"whatsapp_contact": contact_id,
-		"whatsapp_account": contact.whatsapp_account
+		"whatsapp_account": contact.whatsapp_account,
+		"reference_doctype": "CRM Lead" if contact.lead_reference else None,
+		"reference_name": contact.lead_reference if contact.lead_reference else None
 	})
 	
 	whatsapp_msg.insert(ignore_permissions=True)
