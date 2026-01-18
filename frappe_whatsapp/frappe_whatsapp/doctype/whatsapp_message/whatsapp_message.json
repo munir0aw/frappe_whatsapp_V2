@@ -141,6 +141,13 @@
    "read_only": 1
   },
   {
+   "default": "0",
+   "fieldname": "is_starred",
+   "fieldtype": "Check",
+   "label": "Starred",
+   "description": "Star this message for quick access"
+  },
+  {
    "allow_in_quick_entry": 1,
    "fieldname": "content_type",
    "fieldtype": "Select",
@@ -301,6 +308,10 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Customer"
   }
  ],
  "quick_entry": 1,
