@@ -125,13 +125,25 @@ def send_message(contact_id, message=None, file_url=None):
 def mark_as_read(contact_id):
 	"""Mark all messages from a contact as read."""
 	
-	contact = frappe.get_doc("WhatsApp Contact", contact_id)
-	contact.reload()  # Reload to get latest version and avoid timestamp conflicts
-	contact.unread_count = 0
-	contact.is_read = 1
-	contact.save(ignore_permissions=True)
-	
-	return {"success": True}
+	try:
+		# Use set_value to avoid TimestampMismatchError during high concurrency
+		# update_modified=False preserves the last modified timestamp to avoid conflicts with other updates
+		frappe.db.set_value("WhatsApp Contact", contact_id, {"unread_count": 0, "is_read": 1}, update_modified=False)
+		
+		# Mark all unread messages as read
+		frappe.db.sql("""
+			UPDATE `tabWhatsApp Message`
+			SET status = 'Read'
+			WHERE whatsapp_contact = %s
+			AND type = 'Incoming'
+			AND status != 'Read'
+		""", contact_id)
+		
+		frappe.db.commit()
+		return {"success": True}
+	except Exception as e:
+		frappe.log_error(f"Mark as read failed: {str(e)}")
+		return {"success": False, "error": str(e)}
 
 
 @frappe.whitelist()
