@@ -103,26 +103,26 @@
                 </span>
 
                 <!-- Message Status (for outgoing messages) -->
-                <div v-if="message.type === 'Outgoing'" class="flex items-center">
-                  <!-- Sent (single checkmark) -->
-                  <svg v-if="message.status === 'Sent'" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
+                <div v-if="message.type === 'Outgoing'" class="flex items-center ml-1">
                   
-                  <!-- Delivered (double checkmark) -->
-                  <svg v-else-if="message.status === 'Delivered'" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <g>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13l4 4L17 7" transform="translate(2,0)" />
-                    </g>
+                  <!-- Read (Double Blue Check) -->
+                  <svg v-if="['Read', 'read'].includes(message.status)" class="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
                   </svg>
 
-                  <!-- Read (blue double checkmark) -->
-                  <svg v-else-if="message.status === 'Read'" class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <g>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13l4 4L17 7" transform="translate(2,0)" />
-                    </g>
+                  <!-- Delivered (Double Grey Check) -->
+                  <svg v-else-if="['Delivered', 'delivered'].includes(message.status)" class="w-4 h-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 7l-1.41-1.41-6.34 6.34 1.41 1.41L18 7zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12-1.42-1.41zM.41 13.41L6 19l1.41-1.41L1.83 12 .41 13.41z"/>
+                  </svg>
+
+                  <!-- Sent (Single Grey Check) -->
+                  <svg v-else-if="['Sent', 'sent'].includes(message.status)" class="w-4 h-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                  
+                  <!-- Default: Queued/Sending (Clock) for ANY other status (null, empty, unknown) -->
+                  <svg v-else class="w-3 h-3 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>

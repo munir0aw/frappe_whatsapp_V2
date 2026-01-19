@@ -236,6 +236,18 @@ export default {
           this.selectContact(this.currentContact, true);
         }
       });
+
+      // Listen for message status updates (Sent, Delivered, Read)
+      setupRealtime('whatsapp_message_status', (data) => {
+        if (this.messages && this.messages.length) {
+          // Find message by name or ID and update status locally
+          const msgIndex = this.messages.findIndex(m => m.name === data.message_name);
+          if (msgIndex !== -1) {
+            // Vue 3 reactivity handles direct property mutation
+            this.messages[msgIndex].status = data.status;
+          }
+        }
+      });
     },
 
     toggleDarkMode() {

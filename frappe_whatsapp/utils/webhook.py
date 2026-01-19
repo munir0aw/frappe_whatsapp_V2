@@ -331,12 +331,26 @@ def update_message_status(data):
 
 		if name:
 			# Use set_value to avoid TimestampMismatchError
+			# Capitalize status (sent -> Sent, read -> Read) for frontend consistency
+			status = status.capitalize()
+			
 			update_dict = {"status": status}
 			if conversation:
 				update_dict["conversation_id"] = conversation
 			
 			frappe.db.set_value("WhatsApp Message", name, update_dict, update_modified=False)
 			frappe.db.commit()
+			
+			# Publish realtime event so UI updates instantly
+			frappe.publish_realtime(
+				"whatsapp_message_status",
+				{
+					"message_id": message_id,
+					"status": status,
+					"message_name": name
+				},
+				after_commit=True
+			)
 	except (KeyError, IndexError):
 		pass
 	except Exception as e:
