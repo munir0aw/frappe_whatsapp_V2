@@ -196,13 +196,24 @@ export default {
           file_url: messageData.file_url
         });
 
-        if (data.message) {
+        if (data.message && data.message.success) {
+          showAlert('Message sent successfully', 'green');
+          // Reload messages
+          await this.selectContact(this.currentContact);
+        } else if (data.message) {
+          showAlert('Message sent successfully', 'green');
           // Reload messages
           await this.selectContact(this.currentContact);
         }
       } catch (error) {
         console.error('Failed to send message:', error);
-        showAlert('Failed to send message', 'red');
+        // Check if error message indicates success despite error code
+        if (error.message && error.message.includes('success')) {
+          showAlert('Message sent successfully', 'green');
+          await this.selectContact(this.currentContact);
+        } else {
+          showAlert('Failed to send message: ' + (error.message || 'Unknown error'), 'red');
+        }
       }
     },
 

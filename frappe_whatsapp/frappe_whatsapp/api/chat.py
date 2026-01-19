@@ -106,24 +106,8 @@ def send_message(contact_id, message=None, file_url=None):
 	
 	whatsapp_msg.insert(ignore_permissions=True)
 	
-	# Try to send via WhatsApp API
-	try:
-		from frappe_whatsapp.utils import send_whatsapp_message
-		send_whatsapp_message(
-			to=contact.mobile_no,
-			message=message,
-			media_url=file_url,
-			account=contact.whatsapp_account
-		)
-		
-		whatsapp_msg.status = "Sent"
-		whatsapp_msg.save(ignore_permissions=True)
-		
-	except Exception as e:
-		frappe.log_error(f"Failed to send WhatsApp message: {str(e)}")
-		whatsapp_msg.status = "Failed"
-		whatsapp_msg.save(ignore_permissions=True)
-		frappe.throw(_("Failed to send message: {0}").format(str(e)))
+	# The WhatsApp Message doctype automatically sends the message in before_insert hook
+	# No need to manually call send function
 	
 	# Emit realtime event
 	frappe.publish_realtime('whatsapp_message', {
@@ -142,6 +126,7 @@ def mark_as_read(contact_id):
 	"""Mark all messages from a contact as read."""
 	
 	contact = frappe.get_doc("WhatsApp Contact", contact_id)
+	contact.reload()  # Reload to get latest version and avoid timestamp conflicts
 	contact.unread_count = 0
 	contact.is_read = 1
 	contact.save(ignore_permissions=True)

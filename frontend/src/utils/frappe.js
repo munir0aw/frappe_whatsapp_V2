@@ -13,11 +13,19 @@ export const frappeCall = async (method, args = {}) => {
       body: JSON.stringify(args),
     });
 
-    if (!response.ok) {
-      throw new Error(`API call failed: ${response.statusText}`);
+    const data = await response.json();
+    
+    // Check if response has error even with 200 status
+    if (data.exc || data._server_messages) {
+      const errorMsg = data.exc || data._server_messages;
+      console.error('API Error:', errorMsg);
+      throw new Error(errorMsg);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.exception || data.message || `API call failed: ${response.statusText}`);
+    }
+
     return data;
   } catch (error) {
     console.error('Frappe API call failed:', error);
