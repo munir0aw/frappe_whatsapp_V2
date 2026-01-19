@@ -3,31 +3,66 @@ frappe.pages['whatsapp_chat'].on_page_load = function(wrapper) {
 	const appContainer = $('<div id="app" style="width:100%; height:100vh;"></div>');
 	$(wrapper).html(appContainer);
 	
-	// Hide Frappe page chrome for full-screen experience
-	$(wrapper).find('.page-head').hide();
+	// Hide ALL Frappe UI chrome for true full-screen experience
+	$('.navbar').hide();
+	$('.page-head').hide();
+	$('.page-title').hide();
+	$('.page-actions').hide();
+	$('.layout-side-section').hide();
+	
+	// Reset all padding/margins for full-screen
 	$(wrapper).closest('.page-container').css({
-		'margin': '0',
-		'padding': '0',
+		'margin': '0 !important',
+		'padding': '0 !important',
 		'max-width': '100%',
 		'width': '100%',
 		'height': '100vh',
 		'overflow': 'hidden'
 	});
-	$('.layout-main-section').css({'padding': '0', 'border': 'none'});
+	
+	$('.layout-main-section').css({
+		'padding': '0 !important',
+		'border': 'none',
+		'margin': '0 !important'
+	});
+	
+	$('.layout-main-section-wrapper').css({
+		'padding': '0 !important',
+		'margin': '0 !important'
+	});
+	
 	$('body').css('overflow', 'hidden');
 	
-	// Load Vite-built CSS
-	if (!$('link[href*="index-B2w67d6c.css"]').length) {
-		$('<link rel="stylesheet" href="/assets/frappe_whatsapp/frontend/assets/index-B2w67d6c.css">').appendTo('head');
-	}
-	
-	// Load and execute Vite-built JS
-	import('/assets/frappe_whatsapp/frontend/assets/index-D8YXFPHY.js')
+	// Dynamically load Vite assets from manifest
+	fetch('/assets/frappe_whatsapp/frontend/.vite/manifest.json')
+		.then(res => res.json())
+		.then(manifest => {
+			// Load CSS
+			const cssFile = manifest['src/main.js']?.css?.[0] || manifest['index.html']?.css?.[0];
+			if (cssFile && !$(`link[href*="${cssFile}"]`).length) {
+				$(`<link rel="stylesheet" href="/assets/frappe_whatsapp/frontend/${cssFile}">`).appendTo('head');
+			}
+			
+			// Load JS
+			const jsFile = manifest['src/main.js']?.file || manifest['index.html']?.file;
+			if (jsFile) {
+				return import(`/assets/frappe_whatsapp/frontend/${jsFile}`);
+			}
+		})
 		.then(() => {
 			console.log('WhatsApp Chat frontend loaded');
 		})
 		.catch(err => {
 			console.error('Failed to load frontend:', err);
-			frappe.show_alert({message: 'Failed to load WhatsApp Chat', indicator: 'red'});
+			// Fallback: try to load latest files directly
+			import('/assets/frappe_whatsapp/frontend/assets/index-BYdNf-zV.js')
+				.then(() => {
+					$('<link rel="stylesheet" href="/assets/frappe_whatsapp/frontend/assets/index-u0p987vC.css">').appendTo('head');
+					console.log('WhatsApp Chat frontend loaded (fallback)');
+				})
+				.catch(err2 => {
+					console.error('Failed to load frontend (fallback):', err2);
+					frappe.show_alert({message: 'Failed to load WhatsApp Chat', indicator: 'red'});
+				});
 		});
 };

@@ -12,6 +12,7 @@ export default defineConfig({
   build: {
     outDir: '../frappe_whatsapp/public/frontend',
     emptyOutDir: true,
+    manifest: true,
     rollupOptions: {
       input: './index.html',
     },
