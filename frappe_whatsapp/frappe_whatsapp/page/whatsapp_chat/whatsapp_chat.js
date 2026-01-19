@@ -55,9 +55,9 @@ frappe.pages['whatsapp_chat'].on_page_load = function(wrapper) {
 		.catch(err => {
 			console.error('Failed to load frontend:', err);
 			// Fallback: try to load latest files directly
-			import('/assets/frappe_whatsapp/frontend/assets/index-BYdNf-zV.js')
+			import('/assets/frappe_whatsapp/frontend/assets/index-BCHr-Ib7.js')
 				.then(() => {
-					$('<link rel="stylesheet" href="/assets/frappe_whatsapp/frontend/assets/index-u0p987vC.css">').appendTo('head');
+					$('<link rel="stylesheet" href="/assets/frappe_whatsapp/frontend/assets/index-DliS8rQe.css">').appendTo('head');
 					console.log('WhatsApp Chat frontend loaded (fallback)');
 				})
 				.catch(err2 => {

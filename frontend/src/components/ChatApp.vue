@@ -164,9 +164,11 @@ export default {
       });
     },
 
-    async selectContact(contact) {
+    async selectContact(contact, silent = false) {
       this.currentContact = contact;
-      this.isLoadingMessages = true;
+      if (!silent) {
+        this.isLoadingMessages = true;
+      }
 
       try {
         const data = await frappeCall('frappe_whatsapp.frappe_whatsapp.api.chat.get_messages', { contact_id: contact.name });
@@ -182,7 +184,7 @@ export default {
         }
       } catch (error) {
         console.error('Failed to load messages:', error);
-        showAlert('Failed to load messages', 'red');
+        if (!silent) showAlert('Failed to load messages', 'red');
       } finally {
         this.isLoadingMessages = false;
       }
@@ -197,20 +199,17 @@ export default {
         });
 
         if (data.message && data.message.success) {
-          showAlert('Message sent successfully', 'green');
-          // Reload messages
-          await this.selectContact(this.currentContact);
+          // Silent reload messages
+          await this.selectContact(this.currentContact, true);
         } else if (data.message) {
-          showAlert('Message sent successfully', 'green');
-          // Reload messages
-          await this.selectContact(this.currentContact);
+          // Silent reload messages
+          await this.selectContact(this.currentContact, true);
         }
       } catch (error) {
         console.error('Failed to send message:', error);
         // Check if error message indicates success despite error code
         if (error.message && error.message.includes('success')) {
-          showAlert('Message sent successfully', 'green');
-          await this.selectContact(this.currentContact);
+          await this.selectContact(this.currentContact, true);
         } else {
           showAlert('Failed to send message: ' + (error.message || 'Unknown error'), 'red');
         }
@@ -232,9 +231,9 @@ export default {
         // Refresh contacts list
         this.loadContacts();
 
-        // If viewing this conversation, refresh messages
+        // If viewing this conversation, refresh messages silently
         if (this.currentContact && data.contact === this.currentContact.name) {
-          this.selectContact(this.currentContact);
+          this.selectContact(this.currentContact, true);
         }
       });
     },

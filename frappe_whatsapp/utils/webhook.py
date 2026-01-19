@@ -482,18 +482,17 @@ def update_whatsapp_contact_stats(contact_name, message_text=None, message_name=
 				after_commit=True
 			)
 		
-		# If linked to a CRM Lead, also publish for CRM
-		if contact_data and contact_data.get("lead_reference"):
-			frappe.publish_realtime(
-				"whatsapp_message",
-				{
-					"lead": contact_data.get("lead_reference"),
-					"contact": contact_name,
-					"message": message_text,
-					"message_name": message_name
-				},
-				after_commit=True
-			)
+		# Always publish realtime event for frontend updates
+		frappe.publish_realtime(
+			"whatsapp_message",
+			{
+				"lead": contact_data.get("lead_reference"),
+				"contact": contact_name,
+				"message": message_text,
+				"message_name": message_name
+			},
+			after_commit=True
+		)
 			
 			
 	except Exception:
