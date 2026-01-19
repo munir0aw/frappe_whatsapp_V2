@@ -1,8 +1,0 @@
-{
-	"build": {
-		"whatsapp_chat.bundle.js": {
-			"input": "public/js/whatsapp_chat.bundle.js",
-			"output": "assets/frappe_whatsapp/js/whatsapp_chat.bundle.js"
-		}
-	}
-}

@@ -109,6 +109,7 @@
 
 <script>
 import MessageArea from './MessageArea.vue';
+import { frappeCall, showAlert, newDoc, setupRealtime } from '../utils/frappe.js';
 
 export default {
   name: 'ChatApp',
@@ -138,17 +139,15 @@ export default {
   methods: {
     async loadContacts() {
       try {
-        const response = await frappe.call({
-          method: 'frappe_whatsapp.frappe_whatsapp.api.chat.get_contacts'
-        });
+        const data = await frappeCall('frappe_whatsapp.frappe_whatsapp.api.chat.get_contacts');
         
-        if (response.message) {
-          this.contacts = response.message;
+        if (data.message) {
+          this.contacts = data.message;
           this.filteredContacts = [...this.contacts];
         }
       } catch (error) {
         console.error('Failed to load contacts:', error);
-        frappe.show_alert({ message: 'Failed to load contacts', indicator: 'red' });
+        showAlert('Failed to load contacts', 'red');
       }
     },
 
@@ -170,26 +169,20 @@ export default {
       this.isLoadingMessages = true;
 
       try {
-        const response = await frappe.call({
-          method: 'frappe_whatsapp.frappe_whatsapp.api.chat.get_messages',
-          args: { contact_id: contact.name }
-        });
+        const data = await frappeCall('frappe_whatsapp.frappe_whatsapp.api.chat.get_messages', { contact_id: contact.name });
 
-        if (response.message) {
-          this.messages = response.message;
+        if (data.message) {
+          this.messages = data.message;
           
           // Mark as read
-          await frappe.call({
-            method: 'frappe_whatsapp.frappe_whatsapp.api.chat.mark_as_read',
-            args: { contact_id: contact.name }
-          });
+          await frappeCall('frappe_whatsapp.frappe_whatsapp.api.chat.mark_as_read', { contact_id: contact.name });
 
           // Update unread count locally
           contact.unread_count = 0;
         }
       } catch (error) {
         console.error('Failed to load messages:', error);
-        frappe.show_alert({ message: 'Failed to load messages', indicator: 'red' });
+        showAlert('Failed to load messages', 'red');
       } finally {
         this.isLoadingMessages = false;
       }
@@ -197,29 +190,26 @@ export default {
 
     async handleSendMessage(messageData) {
       try {
-        const response = await frappe.call({
-          method: 'frappe_whatsapp.frappe_whatsapp.api.chat.send_message',
-          args: {
-            contact_id: this.currentContact.name,
-            message: messageData.message,
-            file_url: messageData.file_url
-          }
+        const data = await frappeCall('frappe_whatsapp.frappe_whatsapp.api.chat.send_message', {
+          contact_id: this.currentContact.name,
+          message: messageData.message,
+          file_url: messageData.file_url
         });
 
-        if (response.message) {
+        if (data.message) {
           // Reload messages
           await this.selectContact(this.currentContact);
         }
       } catch (error) {
         console.error('Failed to send message:', error);
-        frappe.show_alert({ message: 'Failed to send message', indicator: 'red' });
+        showAlert('Failed to send message', 'red');
       }
     },
 
     handleCreateLead() {
       if (!this.currentContact) return;
 
-      frappe.new_doc('CRM Lead', {
+      newDoc('CRM Lead', {
         first_name: this.currentContact.contact_name || '',
         mobile_no: this.currentContact.mobile_no,
         whatsapp_contact: this.currentContact.name
@@ -227,7 +217,7 @@ export default {
     },
 
     setupRealtime() {
-      frappe.realtime.on('whatsapp_message', (data) => {
+      setupRealtime('whatsapp_message', (data) => {
         // Refresh contacts list
         this.loadContacts();
 

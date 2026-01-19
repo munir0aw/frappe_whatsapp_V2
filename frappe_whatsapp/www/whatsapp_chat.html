@@ -1,0 +1,31 @@
+{% extends "templates/web.html" %}
+
+{% block title %}WhatsApp Chat{% endblock %}
+
+{% block head_include %}
+<link rel="stylesheet" crossorigin href="/assets/frappe_whatsapp/frontend/assets/index-C45aqBss.css">
+<style>
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100%;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .page-content-wrapper,
+    .page-card {
+        padding: 0 !important;
+        margin: 0 !important;
+        height: 100vh !important;
+    }
+    #app {
+        width: 100%;
+        height: 100vh;
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div id="app"></div>
+<script type="module" crossorigin src="/assets/frappe_whatsapp/frontend/assets/index-BGPxyN7V.js"></script>
+{% endblock %}

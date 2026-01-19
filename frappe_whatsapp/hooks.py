@@ -13,8 +13,8 @@ app_license = "MIT"
 # include js, css files in header of desk.html
 from frappe import __version__ as frappe_version
 
-app_include_css = ['frappe_whatsapp.bundle.css']
-app_include_js = ['frappe_whatsapp.bundle.js']
+app_include_css = []
+app_include_js = []
 
 # include js, css files in header of web template
 # web_include_css = "/assets/frappe_whatsapp/css/frappe_whatsapp.css"
